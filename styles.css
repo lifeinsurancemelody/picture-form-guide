@@ -564,6 +564,9 @@ header { flex-direction: column; align-items: stretch; }
 .ach-item span { color: var(--dim); font-size: 12px; }
 .ach-item.earned { border-color: var(--gold); }
 .ach-item.earned b { color: var(--gold); }
+.ach-item .reward { display: block; color: var(--gold); font-size: 12px; margin-top: 2px; }
+.ach-item .claim-btn, .quest-row .claim-btn { background: #2a2410; color: var(--gold); border: 1px solid var(--gold); margin-top: 6px; }
+.claimed-list { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--dim); }
 .quest-row { margin-bottom: 12px; font-size: 13px; }
 .quest-row .meter { margin: 6px 0; }
 .vault-item.earned { border-color: var(--gold); }

@@ -402,6 +402,9 @@ function seedState() {
     figureVariant: "standard",
     prestige: 0,
     achievements: [],
+    achievementsClaimed: {},
+    achievementBoard: [],
+    questBoard: { week: null, active: [], claimed: [], rotation: 0 },
     questEvents: [],
     questNotified: {},
     collapsed: {},
@@ -618,29 +621,69 @@ function activateDoubleToState(state) {
 }
 
 /* ---------------- Achievements (lifetime badges) + Quests (weekly goals) ----------------
-   DRAFT lists for the user's approval (he doesn't remember the old app's).
-   Recognition only: NO XP or War Coin rewards are attached in this draft.
+   Every achievement and quest pays an XP + War Coin reward when CLAIMED.
+   Rewards pay at face value — the 2x XP bonus stays session-only and never
+   doubles them. War Coins are never clawed back on delete, like all other WC.
    Achievements evaluate from state, so synced history counts for session /
    move-up / target / food / weigh-in badges; shop-action badges (purchase,
    crate, scrap) need real PWA actions, since the PWA has no record of the
-   artifact's shop history. Quests measure the CURRENT week (Monday-anchored)
-   and refresh automatically when the week rolls over. */
+   artifact's shop history. Quests measure the CURRENT week (Monday-anchored).
+   Boards: achievements show 14 at a time from the pool; a claimed achievement
+   leaves its slot and the next pool entry refills it. Quests show 6 at a time;
+   a claimed quest refills within the week, and Monday rotates to the next 6. */
+const ACH_REWARD_SMALL = { xp: 5, wc: 50 };
+const ACH_REWARD_MID = { xp: 10, wc: 100 };
+const ACH_REWARD_BIG = { xp: 20, wc: 200 };
 const ACHIEVEMENTS = [
-  { id: "first-session", name: "First Session", desc: "Log your first workout session." },
-  { id: "first-moveup", name: "Moving Up", desc: "Log your first move-up lift." },
-  { id: "first-target", name: "Target Hit", desc: "Hit a goal on a lift for the first time." },
-  { id: "sessions-10", name: "10 Sessions", desc: "Log 10 workout sessions." },
-  { id: "sessions-25", name: "25 Sessions", desc: "Log 25 workout sessions." },
-  { id: "sessions-50", name: "50 Sessions", desc: "Log 50 workout sessions." },
-  { id: "first-purchase", name: "First Purchase", desc: "Buy your first shop item." },
-  { id: "first-crate", name: "First Drop", desc: "Open your first supply crate." },
-  { id: "first-scrap", name: "Scrap Dealer", desc: "Scrap your first duplicate reward." },
-  { id: "protein-streak-3", name: "Protein Streak ×3", desc: "Hit the protein target 3 days in a row." },
-  { id: "calorie-day", name: "Fuelled Up", desc: "Hit the 3,200-calorie target on a day." },
-  { id: "first-weighin", name: "On the Scale", desc: "Log your first weigh-in." },
-  { id: "weekly-gain", name: "Gaining", desc: "Finish a week with a higher average weigh-in." },
-  { id: "first-prestige", name: "First Prestige", desc: "Prestige for the first time." }
+  { id: "first-session", name: "First Session", desc: "Log your first workout session.", xp: 5, wc: 50 },
+  { id: "first-moveup", name: "Moving Up", desc: "Log your first move-up lift.", xp: 5, wc: 50 },
+  { id: "first-target", name: "Target Hit", desc: "Hit a goal on a lift for the first time.", xp: 5, wc: 50 },
+  { id: "first-purchase", name: "First Purchase", desc: "Buy your first shop item.", xp: 5, wc: 50 },
+  { id: "first-crate", name: "First Drop", desc: "Open your first supply crate.", xp: 5, wc: 50 },
+  { id: "first-scrap", name: "Scrap Dealer", desc: "Scrap your first duplicate reward.", xp: 5, wc: 50 },
+  { id: "first-weighin", name: "On the Scale", desc: "Log your first weigh-in.", xp: 5, wc: 50 },
+  { id: "sessions-10", name: "10 Sessions", desc: "Log 10 workout sessions.", xp: 10, wc: 100 },
+  { id: "moveups-10", name: "10 Move-Ups", desc: "Log 10 move-up lifts.", xp: 10, wc: 100 },
+  { id: "targets-10", name: "10 Targets", desc: "Hit 10 lift goals.", xp: 10, wc: 100 },
+  { id: "protein-streak-3", name: "Protein Streak ×3", desc: "Hit the protein target 3 days in a row.", xp: 10, wc: 100 },
+  { id: "calorie-day", name: "Fuelled Up", desc: "Hit the 3,200-calorie target on a day.", xp: 10, wc: 100 },
+  { id: "weekly-gain", name: "Gaining", desc: "Finish a week with a higher average weigh-in.", xp: 10, wc: 100 },
+  { id: "weighins-10", name: "10 Weigh-Ins", desc: "Log 10 weigh-ins.", xp: 10, wc: 100 },
+  { id: "crates-5", name: "5 Drops", desc: "Open 5 supply crates.", xp: 10, wc: 100 },
+  { id: "purchases-5", name: "5 Purchases", desc: "Buy 5 shop items.", xp: 10, wc: 100 },
+  { id: "scraps-3", name: "Scrap Runner", desc: "Scrap 3 duplicate rewards.", xp: 10, wc: 100 },
+  { id: "protein-streak-7", name: "Protein Streak ×7", desc: "Hit the protein target 7 days in a row.", xp: 10, wc: 100 },
+  { id: "sessions-25", name: "25 Sessions", desc: "Log 25 workout sessions.", xp: 20, wc: 200 },
+  { id: "sessions-50", name: "50 Sessions", desc: "Log 50 workout sessions.", xp: 20, wc: 200 },
+  { id: "sessions-100", name: "100 Sessions", desc: "Log 100 workout sessions.", xp: 20, wc: 200 },
+  { id: "moveups-25", name: "25 Move-Ups", desc: "Log 25 move-up lifts.", xp: 20, wc: 200 },
+  { id: "targets-25", name: "25 Targets", desc: "Hit 25 lift goals.", xp: 20, wc: 200 },
+  { id: "weighins-25", name: "25 Weigh-Ins", desc: "Log 25 weigh-ins.", xp: 20, wc: 200 },
+  { id: "first-prestige", name: "First Prestige", desc: "Prestige for the first time.", xp: 20, wc: 200 },
+  { id: "prestige-2", name: "Second Prestige", desc: "Prestige for the second time.", xp: 20, wc: 200 },
+  { id: "prestige-3", name: "Third Prestige", desc: "Prestige for the third time.", xp: 20, wc: 200 },
+  { id: "protein-streak-14", name: "Protein Streak ×14", desc: "Hit the protein target 14 days in a row.", xp: 20, wc: 200 },
+  { id: "crates-10", name: "10 Drops", desc: "Open 10 supply crates.", xp: 20, wc: 200 },
+  { id: "purchases-10", name: "10 Purchases", desc: "Buy 10 shop items.", xp: 20, wc: 200 },
+  { id: "calorie-streak-3", name: "Fuel Streak ×3", desc: "Hit the 3,200-calorie target 3 days in a row.", xp: 20, wc: 200 },
+  { id: "weekly-gains-5", name: "Steady Gainer", desc: "Finish 5 weeks with a higher average weigh-in.", xp: 20, wc: 200 }
 ];
+const ACH_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));
+const ACH_BOARD_SIZE = 14;
+function countLifts(state, pred) {
+  let n = 0;
+  (state.sessions || []).forEach((s) => Object.values(s.lifts || {}).forEach((l) => { if (pred(l)) n++; }));
+  return n;
+}
+function dayStreak(state, key, n) {
+  const days = Object.keys(state.foodDays || {}).filter((d) => state.foodDays[d].bonus && state.foodDays[d].bonus[key]).sort();
+  for (let i = 0; i + n - 1 < days.length; i++) {
+    let ok = true;
+    for (let j = 1; j < n; j++) if (parseDate(days[i + j]) - parseDate(days[i + j - 1]) !== 86400000) { ok = false; break; }
+    if (ok) return true;
+  }
+  return false;
+}
 function achievementEarned(state, id) {
   const sessions = state.sessions || [];
   const hasLift = (pred) => sessions.some((s) => Object.values(s.lifts || {}).some(pred));
@@ -651,20 +694,32 @@ function achievementEarned(state, id) {
     case "sessions-10": return sessions.length >= 10;
     case "sessions-25": return sessions.length >= 25;
     case "sessions-50": return sessions.length >= 50;
+    case "sessions-100": return sessions.length >= 100;
+    case "moveups-10": return countLifts(state, (l) => l.label === "Move-up") >= 10;
+    case "moveups-25": return countLifts(state, (l) => l.label === "Move-up") >= 25;
+    case "targets-10": return countLifts(state, (l) => l.goalHit === true) >= 10;
+    case "targets-25": return countLifts(state, (l) => l.goalHit === true) >= 25;
     case "first-purchase": return (state.purchaseCount || 0) > 0;
     case "first-crate": return (state.crateCount || 0) > 0;
     case "first-scrap": return (state.scrapCount || 0) > 0;
-    case "protein-streak-3": {
-      const days = Object.keys(state.foodDays || {}).filter((d) => state.foodDays[d].bonus && state.foodDays[d].bonus.protein).sort();
-      for (let i = 0; i + 2 < days.length; i++) {
-        if (parseDate(days[i + 1]) - parseDate(days[i]) === 86400000 && parseDate(days[i + 2]) - parseDate(days[i + 1]) === 86400000) return true;
-      }
-      return false;
-    }
+    case "crates-5": return (state.crateCount || 0) >= 5;
+    case "crates-10": return (state.crateCount || 0) >= 10;
+    case "purchases-5": return (state.purchaseCount || 0) >= 5;
+    case "purchases-10": return (state.purchaseCount || 0) >= 10;
+    case "scraps-3": return (state.scrapCount || 0) >= 3;
+    case "protein-streak-3": return dayStreak(state, "protein", 3);
+    case "protein-streak-7": return dayStreak(state, "protein", 7);
+    case "protein-streak-14": return dayStreak(state, "protein", 14);
     case "calorie-day": return Object.values(state.foodDays || {}).some((d) => d.bonus && d.bonus.cal);
+    case "calorie-streak-3": return dayStreak(state, "cal", 3);
     case "first-weighin": return (state.weights || []).length > 0;
+    case "weighins-10": return (state.weights || []).length >= 10;
+    case "weighins-25": return (state.weights || []).length >= 25;
     case "weekly-gain": return (state.weightXpWeeks || []).length > 0;
+    case "weekly-gains-5": return (state.weightXpWeeks || []).length >= 5;
     case "first-prestige": return (state.prestige || 0) > 0;
+    case "prestige-2": return (state.prestige || 0) >= 2;
+    case "prestige-3": return (state.prestige || 0) >= 3;
   }
   return false;
 }
@@ -678,44 +733,187 @@ function awardAchievements(state) {
       fresh.push(a);
     }
   });
+  ensureAchievementBoard(state);
   return fresh;
 }
+/* Active board: ordered active IDs. Claimed entries are removed and the slot
+   refills from the pool (skipping on-board and already-claimed entries).
+   Refills promote already-earned off-board entries first, so retro rewards
+   are never buried: Claim All keeps freeing slots and promoting earned
+   entries until everything earned is claimed. Then fresh unearned entries
+   fill the board. If the pool runs dry, the board simply holds fewer entries
+   and the UI shows a placeholder. */
+function ensureAchievementBoard(state) {
+  if (!state.achievementsClaimed || typeof state.achievementsClaimed !== "object") state.achievementsClaimed = {};
+  if (!Array.isArray(state.achievementBoard)) state.achievementBoard = [];
+  const claimed = state.achievementsClaimed;
+  state.achievementBoard = state.achievementBoard.filter((id) => ACH_BY_ID[id] && !claimed[id]);
+  for (const a of ACHIEVEMENTS) {
+    if (state.achievementBoard.length >= ACH_BOARD_SIZE) break;
+    if (!state.achievementBoard.includes(a.id) && !claimed[a.id] && achievementEarned(state, a.id)) state.achievementBoard.push(a.id);
+  }
+  for (const a of ACHIEVEMENTS) {
+    if (state.achievementBoard.length >= ACH_BOARD_SIZE) break;
+    if (!state.achievementBoard.includes(a.id) && !claimed[a.id]) state.achievementBoard.push(a.id);
+  }
+  return state.achievementBoard;
+}
+function claimableAchievements(state) {
+  ensureAchievementBoard(state);
+  return state.achievementBoard.filter((id) => achievementEarned(state, id) && !state.achievementsClaimed[id]);
+}
+/* Pays the reward at face value through addXp (so the 200-XP prestige clamp
+   applies exactly as for session XP) plus War Coins. Guarded on claimed
+   state, not just UI, so double-claims are impossible. Returns null unless
+   the entry is on the board, earned, and unclaimed. */
+function claimAchievement(state, id) {
+  ensureAchievementBoard(state);
+  const a = ACH_BY_ID[id];
+  if (!a || !state.achievementBoard.includes(id)) return null;
+  if (state.achievementsClaimed[id]) return null;
+  if (!achievementEarned(state, id)) return null;
+  const r = addXp(state, a.xp);
+  state.coins += a.wc;
+  state.achievementsClaimed[id] = { xp: a.xp, wc: a.wc, date: dateKey(new Date()) };
+  state.achievementBoard = state.achievementBoard.filter((x) => x !== id);
+  ensureAchievementBoard(state);
+  return { id, name: a.name, xp: a.xp, wc: a.wc, leveledUp: r.leveledUp, newLevel: r.newLevel };
+}
+function claimAllAchievements(state) {
+  const done = [];
+  for (let i = 0; i < ACHIEVEMENTS.length; i++) {
+    const next = claimableAchievements(state)[0];
+    if (!next) break;
+    const r = claimAchievement(state, next);
+    if (!r) break;
+    done.push(r);
+  }
+  return done;
+}
 const QUESTS = [
-  { id: "week-4-days", name: "Full Week", desc: "Log all 4 training days in a week.", target: 4 },
-  { id: "week-protein-5", name: "Protein Week", desc: "Hit the protein target on 5 days in a week.", target: 5 },
-  { id: "week-weighins-3", name: "Check In", desc: "Log 3 weigh-ins in a week.", target: 3 },
-  { id: "week-crate", name: "Supply Run", desc: "Open a supply crate this week.", target: 1 },
-  { id: "week-equip", name: "Fresh Kit", desc: "Equip a new item this week.", target: 1 },
-  { id: "week-moveups-5", name: "Moving Week", desc: "Log 5 move-up lifts in a week.", target: 5 }
+  { id: "week-4-days", name: "Full Week", desc: "Log all 4 training days in a week.", type: "training-days", target: 4, xp: 4, wc: 50 },
+  { id: "week-protein-5", name: "Protein Week", desc: "Hit the protein target on 5 days in a week.", type: "protein-days", target: 5, xp: 4, wc: 50 },
+  { id: "week-weighins-3", name: "Check In", desc: "Log 3 weigh-ins in a week.", type: "weigh-ins", target: 3, xp: 4, wc: 50 },
+  { id: "week-crate", name: "Supply Run", desc: "Open a supply crate this week.", type: "crates", target: 1, xp: 2, wc: 25 },
+  { id: "week-equip", name: "Fresh Kit", desc: "Equip a new item this week.", type: "equips", target: 1, xp: 2, wc: 25 },
+  { id: "week-moveups-5", name: "Moving Week", desc: "Log 5 move-up lifts in a week.", type: "move-ups", target: 5, xp: 4, wc: 50 },
+  { id: "week-protein-3", name: "Protein Start", desc: "Hit the protein target on 3 days in a week.", type: "protein-days", target: 3, xp: 4, wc: 50 },
+  { id: "week-calorie-3", name: "Fuelled Week", desc: "Hit the 3,200-calorie target on 3 days in a week.", type: "calorie-days", target: 3, xp: 4, wc: 50 },
+  { id: "week-sessions-3", name: "Three Sessions", desc: "Log 3 workout sessions in a week.", type: "sessions", target: 3, xp: 4, wc: 50 },
+  { id: "week-targets-5", name: "On Target", desc: "Hit 5 lift goals in a week.", type: "target-hits", target: 5, xp: 4, wc: 50 },
+  { id: "week-purchase", name: "Shopper", desc: "Buy a shop item this week.", type: "purchases", target: 1, xp: 2, wc: 25 },
+  { id: "week-scrap", name: "Scrap Run", desc: "Scrap a duplicate reward this week.", type: "scraps", target: 1, xp: 2, wc: 25 },
+  { id: "week-weighin-1", name: "Step On", desc: "Log a weigh-in this week.", type: "weigh-ins", target: 1, xp: 2, wc: 25 },
+  { id: "week-protein-7", name: "Perfect Protein", desc: "Hit the protein target every day of the week.", type: "protein-days", target: 7, xp: 4, wc: 50 },
+  { id: "week-moveups-10", name: "Big Mover", desc: "Log 10 move-up lifts in a week.", type: "move-ups", target: 10, xp: 4, wc: 50 },
+  { id: "week-training-2", name: "Two Days In", desc: "Log 2 training days in a week.", type: "training-days", target: 2, xp: 4, wc: 50 },
+  { id: "week-crates-3", name: "Drop Zone", desc: "Open 3 supply crates this week.", type: "crates", target: 3, xp: 4, wc: 50 },
+  { id: "week-equips-3", name: "Full Refresh", desc: "Equip 3 items this week.", type: "equips", target: 3, xp: 4, wc: 50 }
 ];
+const QUEST_BY_ID = Object.fromEntries(QUESTS.map((q) => [q.id, q]));
+const QUEST_BOARD_SIZE = 6;
+/* Type-driven evaluator: new pool quests are pure data (type + target). */
 function questProgress(state, quest, weekKey) {
   const wk = weekKey || weekKeyOf(dateKey(new Date()));
+  const sessionsWk = (state.sessions || []).filter((s) => weekKeyOf(s.date) === wk);
+  const eventsWk = (type) => (state.questEvents || []).filter((e) => e.type === type && e.week === wk).length;
+  const foodWk = (key) => Object.entries(state.foodDays || {}).filter(([d, day]) => weekKeyOf(d) === wk && day.bonus && day.bonus[key]).length;
   let current = 0;
-  if (quest.id === "week-4-days") {
-    current = new Set((state.sessions || []).filter((s) => weekKeyOf(s.date) === wk).map((s) => s.dayId)).size;
-  } else if (quest.id === "week-protein-5") {
-    current = Object.entries(state.foodDays || {}).filter(([d, day]) => weekKeyOf(d) === wk && day.bonus && day.bonus.protein).length;
-  } else if (quest.id === "week-weighins-3") {
-    current = (state.weights || []).filter((w) => weekKeyOf(w.date) === wk).length;
-  } else if (quest.id === "week-crate") {
-    current = (state.questEvents || []).filter((e) => e.type === "crate" && e.week === wk).length;
-  } else if (quest.id === "week-equip") {
-    current = (state.questEvents || []).filter((e) => e.type === "equip" && e.week === wk).length;
-  } else if (quest.id === "week-moveups-5") {
-    (state.sessions || []).filter((s) => weekKeyOf(s.date) === wk).forEach((s) => {
-      Object.values(s.lifts || {}).forEach((l) => { if (l.label === "Move-up") current++; });
-    });
+  switch (quest.type) {
+    case "training-days": current = new Set(sessionsWk.map((s) => s.dayId)).size; break;
+    case "sessions": current = sessionsWk.length; break;
+    case "protein-days": current = foodWk("protein"); break;
+    case "calorie-days": current = foodWk("cal"); break;
+    case "weigh-ins": current = (state.weights || []).filter((w) => weekKeyOf(w.date) === wk).length; break;
+    case "crates": current = eventsWk("crate"); break;
+    case "equips": current = eventsWk("equip"); break;
+    case "purchases": current = eventsWk("purchase"); break;
+    case "scraps": current = eventsWk("scrap"); break;
+    case "move-ups": sessionsWk.forEach((s) => Object.values(s.lifts || {}).forEach((l) => { if (l.label === "Move-up") current++; })); break;
+    case "target-hits": sessionsWk.forEach((s) => Object.values(s.lifts || {}).forEach((l) => { if (l.goalHit === true) current++; })); break;
   }
   return { current: Math.min(current, quest.target), target: quest.target, done: current >= quest.target };
 }
-/* Returns quests newly completed this week (bannered once per week each). */
+/* Weekly board: { week, active: [6 ids, null when the pool is exhausted],
+   claimed: [ids claimed this week], rotation: pool index of active[0] }.
+   Monday rollover (weekKey change) rotates to the next 6 pool quests in pool
+   order, wrapping around. Within a week, a claimed quest's slot refills from
+   the pool, excluding active and already-claimed-this-week entries. */
+function ensureQuestBoard(state) {
+  if (!state.questBoard || typeof state.questBoard !== "object" || !Array.isArray(state.questBoard.active)) {
+    state.questBoard = { week: null, active: [], claimed: [], rotation: 0 };
+  }
+  if (!Array.isArray(state.questBoard.claimed)) state.questBoard.claimed = [];
+  const wk = weekKeyOf(dateKey(new Date()));
+  if (state.questBoard.week !== wk) {
+    if (state.questBoard.week === null) {
+      state.questBoard = { week: wk, active: QUESTS.slice(0, QUEST_BOARD_SIZE).map((q) => q.id), claimed: [], rotation: 0 };
+    } else {
+      const start = ((typeof state.questBoard.rotation === "number" ? state.questBoard.rotation : 0) + QUEST_BOARD_SIZE) % QUESTS.length;
+      const active = [];
+      for (let i = 0; i < QUEST_BOARD_SIZE; i++) active.push(QUESTS[(start + i) % QUESTS.length].id);
+      state.questBoard = { week: wk, active, claimed: [], rotation: start };
+    }
+  }
+  const b = state.questBoard;
+  b.active = b.active.filter((id) => id === null || QUEST_BY_ID[id]);
+  const used = new Set([...b.active.filter(Boolean), ...b.claimed]);
+  for (let i = 0; i < b.active.length; i++) {
+    if (b.active[i] !== null) continue;
+    const q = QUESTS.find((x) => !used.has(x.id));
+    if (!q) break;
+    b.active[i] = q.id; used.add(q.id);
+  }
+  while (b.active.length < QUEST_BOARD_SIZE) {
+    const q = QUESTS.find((x) => !used.has(x.id));
+    if (!q) break;
+    b.active.push(q.id); used.add(q.id);
+  }
+  return b;
+}
+function claimableQuests(state) {
+  const b = ensureQuestBoard(state);
+  return b.active.filter((id) => id && questProgress(state, QUEST_BY_ID[id], b.week).done && !b.claimed.includes(id));
+}
+/* Pays the quest reward at face value (never doubled) plus War Coins.
+   Guarded on board + claimed state, so double-claims are impossible. The
+   claimed slot refills immediately (null when the pool is exhausted). */
+function claimQuest(state, id) {
+  const b = ensureQuestBoard(state);
+  const q = QUEST_BY_ID[id];
+  if (!q || !b.active.includes(id)) return null;
+  if (b.claimed.includes(id)) return null;
+  if (!questProgress(state, q, b.week).done) return null;
+  const r = addXp(state, q.xp);
+  state.coins += q.wc;
+  b.claimed.push(id);
+  const used = new Set([...b.active.filter(Boolean), ...b.claimed]);
+  const refill = QUESTS.find((x) => !used.has(x.id));
+  b.active[b.active.indexOf(id)] = refill ? refill.id : null;
+  return { id, name: q.name, xp: q.xp, wc: q.wc, leveledUp: r.leveledUp, newLevel: r.newLevel };
+}
+function claimAllQuests(state) {
+  const done = [];
+  for (let i = 0; i < QUESTS.length; i++) {
+    const next = claimableQuests(state)[0];
+    if (!next) break;
+    const r = claimQuest(state, next);
+    if (!r) break;
+    done.push(r);
+  }
+  return done;
+}
+/* Returns quests newly completed this week (bannered once per week each,
+   not per claim). Scoped to the active board. */
 function checkQuests(state) {
   if (!state.questNotified || typeof state.questNotified !== "object") state.questNotified = {};
-  const wk = weekKeyOf(dateKey(new Date()));
+  const b = ensureQuestBoard(state);
   const fresh = [];
-  QUESTS.forEach((q) => {
-    if (questProgress(state, q, wk).done && state.questNotified[q.id] !== wk) {
-      state.questNotified[q.id] = wk;
+  b.active.forEach((id) => {
+    if (!id) return;
+    const q = QUEST_BY_ID[id];
+    if (q && questProgress(state, q, b.week).done && state.questNotified[q.id] !== b.week) {
+      state.questNotified[q.id] = b.week;
       fresh.push(q);
     }
   });
@@ -853,6 +1051,9 @@ function migrateState(state) {
   if (!state.figureVariant) state.figureVariant = (state.equipped && state.equipped.figure) || "standard";
   if (state.prestige === undefined) state.prestige = 0;
   if (!Array.isArray(state.achievements)) state.achievements = [];
+  if (!state.achievementsClaimed || typeof state.achievementsClaimed !== "object") state.achievementsClaimed = {};
+  if (!Array.isArray(state.achievementBoard)) state.achievementBoard = [];
+  if (!state.questBoard || typeof state.questBoard !== "object" || !Array.isArray(state.questBoard.active)) state.questBoard = { week: null, active: [], claimed: [], rotation: 0 };
   if (!Array.isArray(state.questEvents)) state.questEvents = [];
   if (!state.questNotified || typeof state.questNotified !== "object") state.questNotified = {};
   if (!state.collapsed || typeof state.collapsed !== "object") state.collapsed = {};
@@ -1363,8 +1564,10 @@ if (typeof module !== "undefined" && module.exports) {
     syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS, SEED_LABELS,
     charImageFor, charTier, charBulk, WORN_PHOTO,
     buildCharacterSvg, previewSvg, slotFilter, eraBadge, eraMatches,
-    prestigeToState, ACHIEVEMENTS, QUESTS, achievementEarned, awardAchievements,
-    questProgress, checkQuests };
+    prestigeToState, ACHIEVEMENTS, QUESTS, ACH_BY_ID, QUEST_BY_ID, ACH_BOARD_SIZE,
+    QUEST_BOARD_SIZE, achievementEarned, awardAchievements, ensureAchievementBoard,
+    claimableAchievements, claimAchievement, claimAllAchievements, questProgress,
+    ensureQuestBoard, claimableQuests, claimQuest, claimAllQuests, checkQuests };
 }
 
 /* ---------------- Browser layer (DOM, storage, sounds, events) ---------------- */
@@ -1486,15 +1689,15 @@ if (typeof document !== "undefined") {
       showBanner(extraHtml);
     }
   }
-  /* Award + quest notifications (recognition only — no XP or WC attached). */
+  /* Award + quest notifications: completed entries pay when claimed. */
   function notifyAwards() {
     const freshA = awardAchievements(state);
     const freshQ = checkQuests(state);
     if (freshA.length || freshQ.length) {
       persist();
       const bits = [];
-      freshA.forEach((a) => bits.push("🏆 Achievement: <b>" + esc(a.name) + "</b> — " + esc(a.desc)));
-      freshQ.forEach((q) => bits.push("✅ Quest complete: <b>" + esc(q.name) + "</b>"));
+      freshA.forEach((a) => bits.push("🏆 Achievement: <b>" + esc(a.name) + "</b> — +" + a.xp + " XP · +" + a.wc + " WC, ready to claim on the Progress tab."));
+      freshQ.forEach((q) => bits.push("✅ Quest complete: <b>" + esc(q.name) + "</b> — +" + q.xp + " XP · +" + q.wc + " WC, ready to claim on the Progress tab."));
       showBanner(bits.join("<br>"));
     }
   }
@@ -1820,18 +2023,40 @@ if (typeof document !== "undefined") {
       const day = state.foodDays[k], t = dayTotals(day);
       return `<div class="food-entry"><span>${fmtDate(k)}</span><span>${t.cal.toLocaleString()} cal · ${t.protein}g protein ${day.bonus && day.bonus.protein ? `<span class="badge open">Protein ✓</span>` : ""} ${day.bonus && day.bonus.cal ? `<span class="badge open">Calories ✓</span>` : ""}</span></div>`;
     }).join("") + `<p class="muted">Targets: 3,200 cal · 140g protein. Log food on the Log tab.</p>`;
-    // Achievements + quests (recognition only — no XP or War Coins attached).
-    const earnedA = state.achievements || [];
-    $("achievementsCount").textContent = earnedA.length + " / " + ACHIEVEMENTS.length + " earned";
-    $("achievementsBox").innerHTML = `<div class="ach-grid">` + ACHIEVEMENTS.map((a) => {
-      const got = earnedA.includes(a.id);
-      return `<div class="ach-item ${got ? "earned" : "locked"}"><b>${esc(a.name)}</b><span>${esc(a.desc)}</span><span class="badge ${got ? "open" : "closed"}">${got ? "EARNED" : "LOCKED"}</span></div>`;
-    }).join("") + `</div>`;
-    const wk = weekKeyOf(dateKey(new Date()));
-    $("questsBox").innerHTML = QUESTS.map((q) => {
-      const pr = questProgress(state, q, wk);
-      return `<div class="quest-row"><div><b>${esc(q.name)}</b> <span class="muted">· ${esc(q.desc)}</span></div><div class="meter"><div style="width:${pr.target ? Math.round(pr.current / pr.target * 100) : 0}%"></div></div><span>${pr.current}/${pr.target} ${pr.done ? `<span class="badge open">COMPLETED</span>` : ""}</span></div>`;
-    }).join("") + `<p class="muted">Quests refresh every Monday. No XP or War Coins attached — recognition only.</p>`;
+    // Achievements + quests: completed entries pay XP + War Coins when claimed.
+    ensureAchievementBoard(state);
+    const qb = ensureQuestBoard(state);
+    const claimedA = state.achievementsClaimed || {};
+    const claimableA = state.achievementBoard.filter((id) => achievementEarned(state, id) && !claimedA[id]);
+    $("achievementsCount").textContent = Object.keys(claimedA).length + " claimed · " + state.achievementBoard.length + " on the board · " + ACHIEVEMENTS.length + " in the pool";
+    $("achievementsBox").innerHTML = `<div class="ach-grid">` + state.achievementBoard.map((id) => {
+      const a = ACH_BY_ID[id];
+      const got = achievementEarned(state, id);
+      return `<div class="ach-item ${got ? "earned" : "locked"}"><b>${esc(a.name)}</b><span>${esc(a.desc)}</span><span class="reward">+${a.xp} XP · +${a.wc} WC</span>${got ? `<button class="small claim-btn" data-claim-ach="${a.id}">CLAIM</button>` : `<span class="badge closed">LOCKED</span>`}</div>`;
+    }).join("") + `</div>` + (state.achievementBoard.length < ACH_BOARD_SIZE ? `<p class="muted">More achievements coming — the board refills as new ones are added.</p>` : "") + (claimableA.length ? `<p><button class="small claim-btn" data-claim-all-ach>Claim all (${claimableA.length})</button></p>` : "") + (Object.keys(claimedA).length ? `<p class="muted">Claimed:</p><div class="claimed-list">` + Object.entries(claimedA).map(([id, r]) => `<span>${esc(ACH_BY_ID[id] ? ACH_BY_ID[id].name : id)} · +${r.xp} XP · +${r.wc} WC · ${fmtDate(r.date)}</span>`).join("") + `</div>` : "");
+    const claimableQ = qb.active.filter((id) => id && questProgress(state, QUEST_BY_ID[id], qb.week).done && !qb.claimed.includes(id));
+    $("questsBox").innerHTML = qb.active.map((id) => {
+      if (!id) return `<div class="quest-row"><div><b>More quests coming</b> <span class="muted">· New quests arrive with the next Monday rotation.</span></div></div>`;
+      const q = QUEST_BY_ID[id];
+      const pr = questProgress(state, q, qb.week);
+      return `<div class="quest-row"><div><b>${esc(q.name)}</b> <span class="muted">· ${esc(q.desc)}</span></div><div class="meter"><div style="width:${pr.target ? Math.round(pr.current / pr.target * 100) : 0}%"></div></div><span>${pr.current}/${pr.target} · +${q.xp} XP · +${q.wc} WC ${pr.done ? `<button class="small claim-btn" data-claim-quest="${q.id}">CLAIM</button>` : ""}</span></div>`;
+    }).join("") + (claimableQ.length ? `<p><button class="small claim-btn" data-claim-all-quest>Claim all (${claimableQ.length})</button></p>` : "") + (qb.claimed.length ? `<p class="muted">Claimed this week: ` + qb.claimed.map((id) => esc(QUEST_BY_ID[id] ? QUEST_BY_ID[id].name : id)).join(", ") + `</p>` : "") + `<p class="muted">Quests refresh every Monday. Completed quests pay XP + War Coins when claimed.</p>`;
+    $("achievementsBox").querySelectorAll("[data-claim-ach]").forEach((b) => b.addEventListener("click", () => {
+      const r = claimAchievement(state, b.dataset.claimAch);
+      if (r) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
+    }));
+    $("achievementsBox").querySelectorAll("[data-claim-all-ach]").forEach((b) => b.addEventListener("click", () => {
+      const rs = claimAllAchievements(state);
+      if (rs.length) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
+    }));
+    $("questsBox").querySelectorAll("[data-claim-quest]").forEach((b) => b.addEventListener("click", () => {
+      const r = claimQuest(state, b.dataset.claimQuest);
+      if (r) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
+    }));
+    $("questsBox").querySelectorAll("[data-claim-all-quest]").forEach((b) => b.addEventListener("click", () => {
+      const rs = claimAllQuests(state);
+      if (rs.length) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
+    }));
     applyCollapse();
   }
   $("claimBtn").addEventListener("click", () => doClaim($("claimBtn")));
@@ -1843,8 +2068,8 @@ if (typeof document !== "undefined") {
     persist();
     prestigeStinger();
     let msg = "🎖 Prestige " + state.prestige + "! XP reset to 0 — the climb starts again at Level 1. Coins, gear, history, and double-XP charges all carry over.";
-    freshA.forEach((a) => { msg += "<br>🏆 Achievement: <b>" + esc(a.name) + "</b>"; });
-    freshQ.forEach((q) => { msg += "<br>✅ Quest complete: <b>" + esc(q.name) + "</b>"; });
+    freshA.forEach((a) => { msg += "<br>🏆 Achievement: <b>" + esc(a.name) + "</b> (+" + a.xp + " XP · +" + a.wc + " WC — claim on Progress)"; });
+    freshQ.forEach((q) => { msg += "<br>✅ Quest complete: <b>" + esc(q.name) + "</b> (+" + q.xp + " XP · +" + q.wc + " WC — claim on Progress)"; });
     showBanner(msg);
     renderProgress(); renderHeader(); renderCharacter();
   });
@@ -2032,6 +2257,8 @@ if (typeof document !== "undefined") {
     const item = ITEM_BY_ID[pend.itemId];
     state.pendingDuplicate = null;
     state.scrapCount = (state.scrapCount || 0) + 1;
+    if (!Array.isArray(state.questEvents)) state.questEvents = [];
+    state.questEvents.push({ type: "scrap", week: weekKeyOf(dateKey(new Date())) });
     persist();
     hideModal("dupModal");
     renderShop(); renderHeader();
@@ -2146,6 +2373,8 @@ if (typeof document !== "undefined") {
     state.coins -= it.price;
     state.owned.push(id);
     state.purchaseCount = (state.purchaseCount || 0) + 1;
+    if (!Array.isArray(state.questEvents)) state.questEvents = [];
+    state.questEvents.push({ type: "purchase", week: weekKeyOf(dateKey(new Date())) });
     persist();
     unlockSound();
     $("unlockPreview").innerHTML = previewSvg(it);
