@@ -566,3 +566,39 @@ header { flex-direction: column; align-items: stretch; }
 .quest-row .meter { margin: 6px 0; }
 .vault-item.earned { border-color: var(--gold); }
 .vault-item.earned img { filter: none; }
+
+/* ---------- Shop + character polish round: sleeker shop ----------
+   Item windows go significantly more transparent so the animated green
+   shop background shows through prominently. Details panels keep a darker
+   wash so verse text stays readable. All shop logic is untouched — this
+   is presentation only, scoped to the Shop tab via body.shop-active. */
+body.shop-active .shop-card {
+  background: linear-gradient(180deg, rgba(22, 28, 18, 0.42), rgba(12, 16, 10, 0.55));
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(232, 230, 223, 0.16);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.25);
+  padding: 12px;
+}
+body.shop-active .shop-preview { background: rgba(0, 0, 0, 0.18); }
+body.shop-active .shop-grid { gap: 12px; }
+body.shop-active .shop-title { font-size: 15px; letter-spacing: 0.02em; }
+body.shop-active .shop-title b { font-weight: 800; }
+body.shop-active .shop-details {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 8px;
+  padding: 8px 8px 8px 10px;
+}
+body.shop-active .crate-card {
+  background: linear-gradient(180deg, rgba(22, 28, 18, 0.55), rgba(12, 16, 10, 0.65));
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(232, 230, 223, 0.14);
+}
+body.shop-active .depot-head h2 { letter-spacing: 0.14em; }
+body.shop-active .shop-foot .price { font-size: 15px; }
+
+/* ---------- Realistic character photos ---------- */
+.char-photo-wrap { display:flex; justify-content:center; }
+.char-photo { width:100%; max-width:280px; display:block; border-radius:12px; transform-origin:center top; }
+.char-night { filter:brightness(0.55) saturate(0.75) hue-rotate(190deg); }

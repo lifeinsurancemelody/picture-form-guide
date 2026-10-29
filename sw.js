@@ -1,8 +1,8 @@
-/* Picture Form Guide PWA — service worker (parity build).
+/* Picture Form Guide PWA — service worker (realistic character photos).
    Cache-first for the app shell so the app opens offline after the first
    visit. Photos and prestige emblems are precached too (small, local
    files). Version the cache name on each release so updates replace old files. */
-const CACHE = "pfg-pwa-v6";
+const CACHE = "pfg-pwa-v8";
 const CORE = [
   "./",
   "./index.html",
@@ -39,7 +39,15 @@ const CORE = [
   "./assets/prestige/prestige-7.jpg",
   "./assets/prestige/prestige-8.jpg",
   "./assets/prestige/prestige-9.jpg",
-  "./assets/prestige/prestige-10.jpg"
+  "./assets/prestige/prestige-10.jpg",
+  "./assets/character/base.webp",
+  "./assets/character/base-moustache.webp",
+  "./assets/character/fullkit.webp",
+  "./assets/character/fullkit-moustache.webp",
+  "./assets/character/base-dogtags.webp",
+  "./assets/character/base-bible.webp",
+  "./assets/character/base-loadout.webp",
+  "./assets/character/base-saint-jacket.webp"
 ];
 
 self.addEventListener("install", (event) => {

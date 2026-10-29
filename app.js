@@ -735,16 +735,19 @@ function wcBoosted(n, dateStr) { return Math.round(n * wcMult(dateStr)); }
    dropped shoulders, cropped ribbed hem, small script wordmark). Bottoms are all
    cut like the baggy camo cargos (wide legs, bellows pockets, pooled hem).
    Scripture rule: garments show ONLY the verse reference, printed small at the
-   hem. The full verse and its plain-language meaning live in the description. */
+   hem. The full verse and its plain-language meaning live in the description.
+   Saint (Dan 7:18) and the Camo Verse Hoodie (2 Tim 2:3, wordmark SOLDIER) are
+   user-approved picks (delegated choice, 2026-10-29). Night Ops stays verse-less
+   by design; non-scripture gear carries no verse. */
 const SHOP_ITEMS = [
   // ---- Tops ----
-  { id: "saint-jacket", name: "Saint Script Jacket", slot: "top", price: 300, cut: "jacket", main: "#e8ddc0", dark: "#c9b98f", accent: "#3a3a3a", word: "Saint", wordStyle: "script", verseRef: "1 Pet 2:9", verse: "But ye are a chosen generation, a royal priesthood, an holy nation, a peculiar people;", meaning: "You were chosen and set apart — carry yourself like it.", desc: "Cream cropped script jacket with a boxy body, dropped shoulders, and a ribbed hem." },
+  { id: "saint-jacket", name: "Saint Script Jacket", slot: "top", price: 300, cut: "jacket", main: "#e8ddc0", dark: "#c9b98f", accent: "#3a3a3a", word: "Saint", wordStyle: "script", verseRef: "Dan 7:18", verse: "But the saints of the most High shall take the kingdom, and possess the kingdom for ever, even for ever and ever.", meaning: "The saints don't just survive the fight — they take the kingdom and hold it forever.", desc: "Cream cropped script jacket with a boxy body, dropped shoulders, and a ribbed hem." },
   { id: "faith-tee", name: "Faith Over Fear Tee", slot: "top", price: 150, cut: "tee", main: "#2e2e2e", dark: "#1c1c1c", accent: "#c8a84a", word: "FAITH", wordStyle: "gothic", verseRef: "Heb 11:1", verse: "Now faith is the substance of things hoped for, the evidence of things not seen.", meaning: "Faith is trusting what you can't see yet — like gains before they show.", desc: "Black oversized gothic tee with a bold FAITH chest print and a cracked vintage wash." },
   { id: "fearnot-tee", name: "Fear Not Gothic Tee", slot: "top", price: 150, cut: "tee", main: "#3a3f2a", dark: "#242816", accent: "#e8e6df", word: "FEAR NOT", wordStyle: "gothic", verseRef: "Isa 41:10", verse: "Fear thou not; for I am with thee: be not dismayed; for I am thy God: I will strengthen thee; yea, I will help thee; yea, I will uphold thee with the right hand of my righteousness.", meaning: "When the weight feels heavy, you're not facing it alone.", desc: "Olive gothic tee with dripping FEAR NOT lettering across the chest." },
   { id: "strength-cover", name: "Strength Pump Cover", slot: "top", price: 180, cut: "tee", main: "#4a4a44", dark: "#2c2c28", accent: "#c8a84a", word: "Strength", wordStyle: "bold", verseRef: "Phil 4:13", verse: "I can do all things through Christ which strengtheneth me.", meaning: "Your strength for the hard sets comes from beyond yourself.", desc: "Boxy pump cover with a cropped raw hem, made to come off after warm-ups." },
-  { id: "shepherd-anorak", name: "Shepherd Anorak", slot: "top", price: 220, cut: "anorak", main: "#6b6f3f", dark: "#4a4d2a", accent: "#e8ddc0", word: "Shepherd", wordStyle: "script", verseRef: "Ps 23:1", verse: "The LORD is my shepherd; I shall not want.", meaning: "Guided and provided for — nothing missing.", desc: "Olive hooded anorak with a roomy boxy cut and a chest pocket." },
+  { id: "shepherd-anorak", name: "Shepherd Anorak", slot: "top", price: 220, cut: "anorak", main: "#6b6f3f", dark: "#4a4d2a", accent: "#e8ddc0", word: "Shepherd", wordStyle: "script", verseRef: "Ps 23", verse: "The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters. He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake. Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me. Thou preparest a table before me in the presence of mine enemies: thou anointest my head with oil; my cup runneth over. Surely goodness and mercy shall follow me all the days of my life: and I will dwell in the house of the LORD for ever.", meaning: "Guided and provided for — nothing missing.", desc: "Olive hooded anorak with a roomy boxy cut and a chest pocket." },
   { id: "bestill-tee", name: "Be Still Tee", slot: "top", price: 150, cut: "tee", main: "#d8d2c0", dark: "#b0a888", accent: "#3a3a3a", word: "Be Still", wordStyle: "script", verseRef: "Ps 46:10", verse: "Be still, and know that I am God: I will be exalted among the heathen, I will be exalted in the earth.", meaning: "Stop striving for a second and remember who's in charge.", desc: "Cream boxy tee with a small script wordmark and a soft washed finish." },
-  { id: "armor-tee", name: "Armor of God Tee", slot: "top", price: 160, cut: "tee", main: "#23241f", dark: "#14150f", accent: "#c8a84a", word: "Armor", wordStyle: "gothic", verseRef: "Eph 6:11", verse: "Put on the whole armour of God, that ye may be able to stand against the wiles of the devil.", meaning: "Suit up daily — training is a battle too.", desc: "Black gothic tee with gold Armor lettering and a faded cracked print." },
+  { id: "armor-tee", name: "Armor of God Tee", slot: "top", price: 160, cut: "tee", main: "#23241f", dark: "#14150f", accent: "#c8a84a", word: "Armor", wordStyle: "gothic", verseRef: "Eph 6:10–17", verse: "Finally, my brethren, be strong in the Lord, and in the power of his might. Put on the whole armour of God, that ye may be able to stand against the wiles of the devil. For we wrestle not against flesh and blood, but against principalities, against powers, against the rulers of the darkness of this world, against spiritual wickedness in high places. Wherefore take unto you the whole armour of God, that ye may be able to withstand in the evil day, and having done all, to stand. Stand therefore, having your loins girt about with truth, and having on the breastplate of righteousness; And your feet shod with the preparation of the gospel of peace; Above all, taking the shield of faith, wherewith ye shall be able to quench all the fiery darts of the wicked. And take the helmet of salvation, and the sword of the Spirit, which is the word of God:", meaning: "Suit up daily — training is a battle too.", desc: "Black gothic tee with gold Armor lettering and a faded cracked print." },
   { id: "eagles-tee", name: "Eagles Soar Tee", slot: "top", price: 160, cut: "tee", main: "#31404f", dark: "#1e2833", accent: "#e8e6df", word: "Eagles", wordStyle: "bold", verseRef: "Isa 40:31", verse: "But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint.", meaning: "Waiting on God renews strength instead of draining it.", desc: "Slate boxy tee with a bold Eagles chest print." },
   { id: "courage-crew", name: "Courage Crew", slot: "top", price: 160, cut: "tee", main: "#5c3a2a", dark: "#3d2418", accent: "#e8ddc0", word: "Courage", wordStyle: "bold", verseRef: "Josh 1:9", verse: "Have not I commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest.", meaning: "Courage isn't the absence of fear — it's moving anyway, with God with you.", desc: "Rust crew-neck tee with a wide boxy body and a cropped ribbed hem." },
   { id: "run-tank", name: "Run the Race Tank", slot: "top", price: 140, cut: "tank", main: "#1f2a22", dark: "#121a14", accent: "#c8a84a", word: "Run", wordStyle: "bold", verseRef: "1 Cor 9:24", verse: "Know ye not that they which run in a race run all, but one receiveth the prize? So run, that ye may obtain.", meaning: "Train like you're running to win, not just to finish.", desc: "Dark green stringer-style tank with a bold Run print." },
@@ -777,8 +780,8 @@ const SHOP_ITEMS = [
   { id: "bible", name: "Field Bible", slot: "hand", price: 100, glyph: "bible", held: "bible", desc: "Pocket field Bible with a gilt cross on the cover." },
   { id: "dumbbells", name: "Iron Dumbbell Pair", slot: "hand", price: 150, glyph: "dumbbells", held: "dumbbells", desc: "A pair of iron dumbbells, one gripped in each fist." },
   // ---- Artifact-owned additions (no PWA equivalent existed) ----
-  { id: "dogtag-micah", name: "Micah Dog Tags", slot: "neck", price: 100, glyph: "dogtags", desc: "Second dog-tags item — Micah edition, on a long chain, hanging low so it never covers a chest print." },
-  { id: "hoodie-camo-verse", name: "Camo Verse Hoodie", slot: "top", price: 220, cut: "hoodie", camo: "woodland", main: "#5a6136", dark: "#3d4426", accent: "#e8ddc0", word: null, wordStyle: "bold", verseRef: null, verse: null, meaning: null, desc: "Woodland camo pullover hoodie with a roomy boxy cut and a kangaroo pocket." },
+  { id: "dogtag-micah", name: "Micah Dog Tags", slot: "neck", price: 100, glyph: "dogtags", verseRef: "Mic 6:8", verse: "He hath shewed thee, O man, what is good; and what doth the LORD require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?", meaning: "The whole job in one line: do right, love mercy, walk humbly with God.", desc: "Second dog-tags item — Micah edition, on a long chain, hanging low so it never covers a chest print." },
+  { id: "hoodie-camo-verse", name: "Camo Verse Hoodie", slot: "top", price: 220, cut: "hoodie", camo: "woodland", main: "#5a6136", dark: "#3d4426", accent: "#e8ddc0", word: "SOLDIER", wordStyle: "bold", verseRef: "2 Tim 2:3", verse: "Thou therefore endure hardness, as a good soldier of Jesus Christ.", meaning: "A good soldier doesn't get to pick easy days — he endures the hard ones.", desc: "Woodland camo pullover hoodie with a roomy boxy cut and a kangaroo pocket." },
   { id: "joggers-charcoal", name: "Charcoal Joggers", slot: "bottom", price: 150, camo: null, main: "#3a3a3a", dark: "#222222", accent: "#000000", desc: "Charcoal joggers with a tapered leg and cuffed hem." },
   // ---- Figure variants ----
   { id: "figure-night", name: "Night Ops Figure", slot: "figure", price: 250, glyph: "figure-night", desc: "Night Ops figure variant — blacked-out kit for night sessions. Same bulk, same lifts." }
@@ -888,251 +891,428 @@ function wordFont(style) {
    + mouth line) is ALWAYS drawn; beard/stubble wrap around it, never over it.
    Hand-held items sit in one solid fist with curled fingers as arcs — the
    fist grips the item's lower part and never overlaps the item's top. */
+/* The figure v2: rebuilt to the 'GIVE 'EM LEAD' reference — bold outlines,
+   layered cel shading, realistic-proportioned muscular cartoon soldier.
+   Broad shoulders, thick limbs with muscle curves, expressive face (heavy
+   brows, big eyes, strong nose and jaw), detailed kit. Base kit is NOTHING
+   but a military T-shirt, fatigue shorts, and ankle boots; everything else
+   comes from equipped items. The mouth (full lips + mouth line) is ALWAYS
+   drawn after facial hair, so it stays visible — including under the big
+   reference-style handlebar moustache. Hand-held items sit in one solid
+   fist with curled fingers as arcs — the fist grips the item's lower part
+   and never overlaps the item's top. Mass scales with weigh-ins exactly as
+   before: 140 lbs = 1.000x, 152.6 = 1.101x, 165 = 1.160x. */
+/* ---- Character photos (slightly-cartoonish realistic set) ----
+   The Character tab now shows generated photos instead of the code-drawn
+   SVG figure (buildCharacterSvg below is retained but no longer rendered).
+   Tier: full-kit if a jacket, bandolier, pouch, cap, goggles, or tall boots
+   are equipped; otherwise base. Slot photos override the tier photo for
+   clean-shaven faces only — moustache + slot combos fall back to the core
+   moustache tier photo (no moustache slot photos exist). Clean-face
+   precedence: Saint jacket > dogtags+bible loadout > dogtags > bible >
+   tier. Tees/tanks/shorts, other headgear (pith, beret, beanie), aviators,
+   cross, dumbbells, towel, shaker, socks, and bottoms never change the
+   photo. Night (variant "night" or "figure-night") is a CSS filter, not a
+   separate photo. Mass uses the same formula as before, as a CSS scale. */
+const CHAR_PHOTO_DIR = "assets/character/";
+function charTier(equipped) {
+  const ids = new Set(Object.values(equipped || {}).filter(Boolean));
+  const top = equipped && equipped.top ? ITEM_BY_ID[equipped.top] : null;
+  if (top && top.cut === "jacket") return "fullkit";
+  if (["bandolier", "field-pouch", "aviator-cap", "goggles", "tall-boots"].some((id) => ids.has(id))) return "fullkit";
+  return "base";
+}
+function charImageFor(equipped, facialHair, variant) {
+  const eq = equipped || {};
+  const night = variant === "night" || variant === "figure-night";
+  const tier = charTier(eq);
+  const moustache = facialHair === "moustache";
+  const tierSrc = CHAR_PHOTO_DIR + (moustache ? tier + "-moustache" : tier) + ".webp";
+  let src = tierSrc, fallback = null;
+  if (!moustache) {
+    const hasDogtags = eq.neck === "dogtags" || eq.neck === "dogtag-micah";
+    const hasBible = eq.hand === "bible";
+    if (eq.top === "saint-jacket") { src = CHAR_PHOTO_DIR + "base-saint-jacket.webp"; fallback = tierSrc; }
+    else if (hasDogtags && hasBible) { src = CHAR_PHOTO_DIR + "base-loadout.webp"; fallback = tierSrc; }
+    else if (hasDogtags) { src = CHAR_PHOTO_DIR + "base-dogtags.webp"; fallback = tierSrc; }
+    else if (hasBible) { src = CHAR_PHOTO_DIR + "base-bible.webp"; fallback = tierSrc; }
+  }
+  return { src, fallback, night };
+}
+function charBulk(weight) {
+  return 1 + Math.min(0.16, Math.max(-0.06, (weight - 140) * 0.008));
+}
+/* ---- end character photo selection ---- */
 function buildCharacterSvg(equipped, facialHair, weight, variant) {
   const eq = equipped || {};
-  const night = variant === "night";
+  const night = variant === "night" || variant === "figure-night"; // app state stores the item id "figure-night"
   const top = eq.top ? ITEM_BY_ID[eq.top] : null;
   const bottom = eq.bottom ? ITEM_BY_ID[eq.bottom] : null;
   const head = eq.head ? ITEM_BY_ID[eq.head] : null;
   const eyes = eq.eyes ? ITEM_BY_ID[eq.eyes] : null;
   const hand = eq.hand ? ITEM_BY_ID[eq.hand] : null;
   // Mass scales VISIBLY with weigh-ins: broader as weight rises above the
-  // 140 lb start, leaner as it falls. 152.6 lbs renders at 1.10×, 165 at 1.16×.
+  // 140 lb start, leaner as it falls. 152.6 lbs renders at 1.10x, 165 at 1.16x.
   const bulk = 1 + Math.min(0.16, Math.max(-0.06, (weight - 140) * 0.008));
-  const SKIN = "url(#figSkin)", OUT = "#1a1a1a", SHIRT = night ? "#23241f" : "#6b6f3f", SHORTS = night ? "#2c2f1c" : "#7d7f57";
+  const SKIN = "url(#figSkin)", OUT = "#1a1a1a", GOLD = "#c8a84a";
+  const SHIRT = night ? "#23241f" : "#6b6f3f", SHORTS = night ? "#2c2f1c" : "#7d7f57";
+  const SHORTS_DARK = "#5c5e3d";
   const topMain = top ? top.main : SHIRT, topDark = top ? top.dark : "#4a4d2a";
+  const isLongSleeve = top && (top.cut === "jacket" || top.cut === "anorak" || top.cut === "hoodie");
+  const isTank = top && top.cut === "tank";
   let s = `<svg viewBox="0 0 320 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Character figure" style="width:100%;max-width:320px;display:block;margin:0 auto">`;
-  // Cel-shading gradients (skin + base shirt) + torso clip for highlights.
-  s += `<defs><linearGradient id="figSkin" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f2cda4"/><stop offset="55%" stop-color="#e8b98a"/><stop offset="100%" stop-color="#cf9a66"/></linearGradient><linearGradient id="figShirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7d8149"/><stop offset="100%" stop-color="#5c6040"/></linearGradient></defs>`;
-  s += `<ellipse cx="160" cy="424" rx="95" ry="10" fill="#000" opacity="0.35"/>`;
-  // Legs + boots scale with bulk too (same center-out transform as the torso).
+  // Cel-shading gradients (skin + base shirt).
+  s += `<defs><linearGradient id="figSkin" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f6d3a8"/><stop offset="55%" stop-color="#e8b98a"/><stop offset="100%" stop-color="#cf9a66"/></linearGradient><linearGradient id="figShirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7d8149"/><stop offset="100%" stop-color="#5c6040"/></linearGradient></defs>`;
+  s += `<ellipse cx="160" cy="420" rx="100" ry="10" fill="#000" opacity="0.35"/>`;
+  // ---- Legs / bottoms (bulk-scaled) ----
   s += `<g transform="translate(160,0) scale(${bulk.toFixed(3)},1) translate(-160,0)">`;
-  // ---- Legs / bottoms ----
   if (bottom && bottom.camo) {
     const blobs = CAMO_BLOBS[bottom.camo];
-    s += `<defs><clipPath id="legL"><rect x="116" y="222" width="42" height="132"/></clipPath><clipPath id="legR"><rect x="162" y="222" width="42" height="132"/></clipPath></defs>`;
-    s += `<rect x="116" y="222" width="42" height="132" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<rect x="162" y="222" width="42" height="132" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<g clip-path="url(#legL)"><ellipse cx="130" cy="250" rx="18" ry="12" fill="${blobs[0]}"/><ellipse cx="148" cy="300" rx="14" ry="10" fill="${blobs[1]}"/><ellipse cx="126" cy="330" rx="12" ry="8" fill="${blobs[2]}"/></g>`;
-    s += `<g clip-path="url(#legR)"><ellipse cx="190" cy="255" rx="16" ry="11" fill="${blobs[1]}"/><ellipse cx="172" cy="305" rx="13" ry="9" fill="${blobs[0]}"/><ellipse cx="194" cy="332" rx="12" ry="8" fill="${blobs[2]}"/></g>`;
-    s += `<rect x="116" y="222" width="42" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><rect x="162" y="222" width="42" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="120" y="258" width="26" height="38" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="120" y1="268" x2="146" y2="268" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="174" y="258" width="26" height="38" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="174" y1="268" x2="200" y2="268" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<path d="M116,354 q10,7 21,0 t21,0 M162,354 q10,7 21,0 t21,0" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+    const legL = "M122,236 L160,236 L158,352 L126,352 Z", legR = "M160,236 L198,236 L194,352 L162,352 Z";
+    s += `<defs><clipPath id="legL"><path d="${legL}"/></clipPath><clipPath id="legR"><path d="${legR}"/></clipPath></defs>`;
+    s += `<path d="${legL}" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="${legR}" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<g clip-path="url(#legL)"><ellipse cx="132" cy="258" rx="20" ry="13" fill="${blobs[0]}"/><ellipse cx="150" cy="300" rx="16" ry="11" fill="${blobs[1]}"/><ellipse cx="130" cy="332" rx="14" ry="9" fill="${blobs[2]}"/><ellipse cx="148" cy="276" rx="10" ry="7" fill="${blobs[2]}"/></g>`;
+    s += `<g clip-path="url(#legR)"><ellipse cx="188" cy="262" rx="18" ry="12" fill="${blobs[1]}"/><ellipse cx="170" cy="306" rx="15" ry="10" fill="${blobs[0]}"/><ellipse cx="190" cy="334" rx="13" ry="9" fill="${blobs[2]}"/></g>`;
+    s += `<rect x="122" y="236" width="76" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<line x1="138" y1="236" x2="138" y2="246" stroke="${OUT}" stroke-width="1.5"/><line x1="182" y1="236" x2="182" y2="246" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<rect x="126" y="272" width="28" height="36" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="126" y1="282" x2="154" y2="282" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="166" y="272" width="28" height="36" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="166" y1="282" x2="194" y2="282" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M122,352 q9.5,6 19,0 t19,0 M160,352 q9.5,6 19,0 t19,0" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M124,310 L158,310 M162,310 L196,310" stroke="${OUT}" stroke-width="1.5" opacity="0.3"/>`;
+  } else if (bottom && bottom.id === "joggers-charcoal") {
+    s += `<path d="M124,236 L158,236 L152,344 L130,344 Z" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M162,236 L196,236 L190,344 L168,344 Z" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<rect x="124" y="236" width="72" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="128" y="334" width="26" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><rect x="166" y="334" width="26" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M128,254 L140,254 M180,254 L192,254" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
   } else if (bottom) {
-    s += `<rect x="116" y="222" width="42" height="132" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<rect x="162" y="222" width="42" height="132" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<rect x="116" y="222" width="42" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><rect x="162" y="222" width="42" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="120" y="258" width="26" height="38" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="120" y1="268" x2="146" y2="268" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="174" y="258" width="26" height="38" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="174" y1="268" x2="200" y2="268" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<path d="M116,354 q10,7 21,0 t21,0 M162,354 q10,7 21,0 t21,0" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<rect x="122" y="236" width="38" height="116" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<rect x="160" y="236" width="38" height="116" fill="${bottom.main}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<rect x="122" y="236" width="76" height="10" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="126" y="272" width="28" height="36" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="126" y1="282" x2="154" y2="282" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="166" y="272" width="28" height="36" fill="${bottom.dark}" stroke="${OUT}" stroke-width="2"/><line x1="166" y1="282" x2="194" y2="282" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M122,352 q9.5,6 19,0 t19,0 M160,352 q9.5,6 19,0 t19,0" fill="none" stroke="${OUT}" stroke-width="3"/>`;
   } else {
-    s += `<rect x="126" y="222" width="68" height="40" fill="${SHORTS}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<rect x="126" y="222" width="68" height="8" fill="#5c5e3d" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="132" y="262" width="20" height="100" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<rect x="168" y="262" width="20" height="100" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
-    // Calf bulges on bare legs.
-    s += `<ellipse cx="142" cy="318" rx="13" ry="22" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
-    s += `<ellipse cx="178" cy="318" rx="13" ry="22" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
-    // Fatigue-short side pockets.
-    s += `<rect x="126" y="230" width="12" height="18" fill="#5c5e3d" stroke="${OUT}" stroke-width="1.5"/>`;
-    s += `<rect x="182" y="230" width="12" height="18" fill="#5c5e3d" stroke="${OUT}" stroke-width="1.5"/>`;
+    // Base fatigue shorts + bare muscular legs.
+    s += `<path d="M124,236 L196,236 L192,282 Q160,290 128,282 Z" fill="${SHORTS}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<rect x="124" y="236" width="72" height="10" fill="${SHORTS_DARK}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="124" y="250" width="13" height="18" fill="${SHORTS_DARK}" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<rect x="183" y="250" width="13" height="18" fill="${SHORTS_DARK}" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<path d="M160,246 L160,284" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+    // Thigh-to-calf leg paths: thick, with calf bulges and knee lines.
+    s += `<path d="M130,282 L158,282 L156,330 Q163,346 155,362 L137,362 Q129,346 134,330 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M162,282 L190,282 L186,330 Q191,346 183,362 L165,362 Q157,346 164,330 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<ellipse cx="139" cy="346" rx="5" ry="13" fill="#fff" opacity="0.16"/>`;
+    s += `<ellipse cx="171" cy="346" rx="5" ry="13" fill="#fff" opacity="0.16"/>`;
+    s += `<path d="M135,330 Q144,334 153,330 M167,330 Q176,334 185,330" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
   }
   if (bottom) {
-    // Cargo legs end at the pooled hem; skin shows only below it when boots are ankle-height.
-    s += `<rect x="132" y="354" width="20" height="8" fill="${SKIN}" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="168" y="354" width="20" height="8" fill="${SKIN}" stroke="${OUT}" stroke-width="2"/>`;
+    // Skin shows only below the hem when boots are ankle-height.
+    s += `<rect x="134" y="352" width="18" height="8" fill="${SKIN}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="168" y="352" width="18" height="8" fill="${SKIN}" stroke="${OUT}" stroke-width="2"/>`;
   }
   // Socks (down the shin, over skin/above boots)
   if (eq.socks) {
-    s += `<rect x="132" y="318" width="20" height="44" fill="#d8d2c0" stroke="${OUT}" stroke-width="2"/><line x1="132" y1="328" x2="152" y2="328" stroke="#7a7d4f" stroke-width="3"/><line x1="132" y1="336" x2="152" y2="336" stroke="#7a7d4f" stroke-width="3"/>`;
-    s += `<rect x="168" y="318" width="20" height="44" fill="#d8d2c0" stroke="${OUT}" stroke-width="2"/><line x1="168" y1="328" x2="188" y2="328" stroke="#7a7d4f" stroke-width="3"/><line x1="168" y1="336" x2="188" y2="336" stroke="#7a7d4f" stroke-width="3"/>`;
+    s += `<rect x="132" y="316" width="20" height="46" fill="#d8d2c0" stroke="${OUT}" stroke-width="2"/><line x1="132" y1="326" x2="152" y2="326" stroke="#7a7d4f" stroke-width="3"/><line x1="132" y1="334" x2="152" y2="334" stroke="#7a7d4f" stroke-width="3"/>`;
+    s += `<rect x="168" y="316" width="20" height="46" fill="#d8d2c0" stroke="${OUT}" stroke-width="2"/><line x1="168" y1="326" x2="188" y2="326" stroke="#7a7d4f" stroke-width="3"/><line x1="168" y1="334" x2="188" y2="334" stroke="#7a7d4f" stroke-width="3"/>`;
   }
   // Boots
   if (eq.feet === "tall-boots") {
-    s += `<rect x="128" y="300" width="28" height="98" fill="#2e2114" stroke="${OUT}" stroke-width="3"/><line x1="128" y1="330" x2="156" y2="330" stroke="${OUT}" stroke-width="2"/><line x1="128" y1="360" x2="156" y2="360" stroke="${OUT}" stroke-width="2"/><rect x="124" y="392" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="164" y="300" width="28" height="98" fill="#2e2114" stroke="${OUT}" stroke-width="3"/><line x1="164" y1="330" x2="192" y2="330" stroke="${OUT}" stroke-width="2"/><line x1="164" y1="360" x2="192" y2="360" stroke="${OUT}" stroke-width="2"/><rect x="160" y="392" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
+    // Tall lace-up combat boots in the reference style: crisscross laces.
+    s += `<rect x="128" y="296" width="28" height="102" fill="#2e2114" stroke="${OUT}" stroke-width="3"/><rect x="128" y="296" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M132,312 L152,326 M152,312 L132,326 M132,334 L152,348 M152,334 L132,348 M132,356 L152,370 M152,356 L132,370" stroke="#8a7a5c" stroke-width="2"/>`;
+    s += `<rect x="124" y="398" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><path d="M128,388 Q142,380 156,388" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
+    s += `<rect x="164" y="296" width="28" height="102" fill="#2e2114" stroke="${OUT}" stroke-width="3"/><rect x="164" y="296" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M168,312 L188,326 M188,312 L168,326 M168,334 L188,348 M188,334 L168,348 M168,356 L188,370 M188,356 L168,370" stroke="#8a7a5c" stroke-width="2"/>`;
+    s += `<rect x="160" y="398" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><path d="M164,388 Q178,380 192,388" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
   } else {
-    s += `<rect x="128" y="360" width="28" height="38" fill="#3a2a1a" stroke="${OUT}" stroke-width="3"/><rect x="124" y="394" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="164" y="360" width="28" height="38" fill="#3a2a1a" stroke="${OUT}" stroke-width="3"/><rect x="160" y="394" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
+    // Base ankle boots.
+    s += `<rect x="128" y="360" width="28" height="38" fill="#3a2a1a" stroke="${OUT}" stroke-width="3"/><rect x="124" y="398" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M132,368 L152,368 M132,376 L152,376 M132,384 L152,384" stroke="#8a7a5c" stroke-width="1.5"/><path d="M128,390 Q142,382 156,390" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
+    s += `<rect x="164" y="360" width="28" height="38" fill="#3a2a1a" stroke="${OUT}" stroke-width="3"/><rect x="160" y="398" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M168,368 L188,368 M168,376 L188,376 M168,384 L188,384" stroke="#8a7a5c" stroke-width="1.5"/><path d="M164,390 Q178,382 192,390" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
   }
-  // ---- Torso + arms (bulk-scaled) ----
   s += `</g>`; // close the legs bulk group
+  // ---- Torso + arms (bulk-scaled) ----
   s += `<g transform="translate(160,0) scale(${bulk.toFixed(3)},1) translate(-160,0)">`;
   const sleeve = top ? topMain : SHIRT;
-  if (!top || top.cut !== "tank") {
-    const sleeveLen = top && (top.cut === "jacket" || top.cut === "anorak") ? 205 : 160;
-    s += `<rect x="104" y="122" width="26" height="${sleeveLen - 122}" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
-    s += `<rect x="190" y="122" width="26" height="${sleeveLen - 122}" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
-    // Deltoid caps over the sleeve tops.
-    s += `<ellipse cx="117" cy="128" rx="14" ry="11" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
-    s += `<ellipse cx="203" cy="128" rx="14" ry="11" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
+  // Upper arms: sleeves per cut, or bare deltoids for tanks.
+  if (isTank || !top) {
+    s += `<ellipse cx="116" cy="134" rx="19" ry="15" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<ellipse cx="204" cy="134" rx="19" ry="15" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M106,144 L128,144 L126,198 L108,198 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M192,144 L214,144 L212,198 L194,198 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<ellipse cx="117" cy="172" rx="13" ry="19" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="203" cy="172" rx="13" ry="19" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+  } else if (isLongSleeve) {
+    s += `<path d="M102,126 L132,126 L128,248 L104,248 Z" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M188,126 L218,126 L216,248 L192,248 Z" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<ellipse cx="117" cy="132" rx="17" ry="13" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="203" cy="132" rx="17" ry="13" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<rect x="104" y="238" width="24" height="10" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="192" y="238" width="24" height="10" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
+  } else {
+    // Tee: short sleeves to mid-bicep, then bare forearms.
+    s += `<path d="M104,126 L132,126 L130,178 L106,178 Z" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M188,126 L216,126 L214,178 L190,178 Z" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<ellipse cx="117" cy="132" rx="17" ry="13" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="203" cy="132" rx="17" ry="13" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<rect x="106" y="170" width="24" height="8" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="190" y="170" width="24" height="8" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
   }
-  s += `<rect x="108" y="190" width="18" height="70" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
-  s += `<rect x="194" y="190" width="18" height="70" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
-  // Bicep bulges on the upper arms.
-  s += `<ellipse cx="117" cy="202" rx="12" ry="17" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
-  s += `<ellipse cx="203" cy="202" rx="12" ry="17" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
-  const torsoW = top && (top.cut === "jacket" || top.cut === "anorak" || top.cut === "hoodie") ? [104, 216] : [112, 208];
-  s += `<path d="M${torsoW[0]},118 L${torsoW[1]},118 L198,228 L122,228 Z" fill="${topMain}" stroke="${OUT}" stroke-width="3"/>`;
-  // Cel-shading: highlight left, shade right, clipped to the torso; plus pec arcs.
-  s += `<defs><clipPath id="figTorso"><path d="M${torsoW[0]},118 L${torsoW[1]},118 L198,228 L122,228 Z"/></clipPath></defs>`;
-  s += `<g clip-path="url(#figTorso)"><ellipse cx="${torsoW[0] + 16}" cy="172" rx="15" ry="55" fill="#fff" opacity="0.13"/><ellipse cx="${torsoW[1] - 12}" cy="176" rx="13" ry="55" fill="#000" opacity="0.11"/></g>`;
-  s += `<path d="M128,152 Q144,164 160,154 Q176,164 192,152" fill="none" stroke="${OUT}" stroke-width="2" opacity="0.45"/>`;
+  // Hood sits behind the neck for hoodie/anorak cuts.
   if (top && (top.cut === "hoodie" || top.cut === "anorak")) {
-    s += `<path d="M132,118 Q160,96 188,118 Q160,108 132,118 Z" fill="${topDark}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M134,128 Q160,100 186,128 Q160,114 134,128 Z" fill="${topDark}" stroke="${OUT}" stroke-width="3"/>`;
   }
-  // Collar + buttons
-  s += `<path d="M146,118 L160,134 L174,118" fill="none" stroke="${OUT}" stroke-width="3"/>`;
-  s += `<circle cx="160" cy="152" r="2.5" fill="${OUT}"/><circle cx="160" cy="178" r="2.5" fill="${OUT}"/><circle cx="160" cy="204" r="2.5" fill="${OUT}"/>`;
+  const torsoPath = isLongSleeve || (top && top.cut === "jacket")
+    ? "M102,124 L218,124 L204,240 L116,240 Z" : "M110,124 L210,124 L200,240 L120,240 Z";
+  s += `<path d="${torsoPath}" fill="${topMain}" stroke="${OUT}" stroke-width="3"/>`;
+  // Layered cel shading, clipped to the torso: highlight left, shade right,
+  // under-pec shadow band, plus pec arcs for the muscular chest.
+  s += `<defs><clipPath id="figTorso"><path d="${torsoPath}"/></clipPath></defs>`;
+  s += `<g clip-path="url(#figTorso)"><ellipse cx="124" cy="180" rx="16" ry="58" fill="#fff" opacity="0.14"/><ellipse cx="198" cy="182" rx="14" ry="58" fill="#000" opacity="0.13"/><rect x="110" y="186" width="100" height="8" fill="#000" opacity="0.08"/></g>`;
+  s += `<path d="M126,162 Q143,176 160,166 Q177,176 194,162" fill="none" stroke="${OUT}" stroke-width="2" opacity="0.5"/>`;
+  s += `<path d="M160,168 L160,196" stroke="${OUT}" stroke-width="1.5" opacity="0.25"/>`;
+  // Collar + cut details.
   if (top && top.cut === "jacket") {
-    s += `<rect x="122" y="212" width="76" height="16" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
-    for (let x = 130; x < 196; x += 11) s += `<line x1="${x}" y1="212" x2="${x}" y2="228" stroke="${OUT}" stroke-width="1.5"/>`;
-  }
-  if (top && top.cut === "hoodie") {
-    s += `<rect x="138" y="196" width="44" height="28" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
-  }
-  if (top && top.cut === "anorak") {
+    // Reference-style olive jacket: gold-trim lapels, epaulettes, buttons, ribbed hem.
+    s += `<path d="M146,124 L160,178 L174,124" fill="none" stroke="${GOLD}" stroke-width="3"/>`;
+    s += `<path d="M146,124 L160,178 M174,124 L160,178" fill="none" stroke="${OUT}" stroke-width="1" opacity="0.6"/>`;
+    s += `<rect x="106" y="124" width="24" height="9" fill="${GOLD}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<rect x="190" y="124" width="24" height="9" fill="${GOLD}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<circle cx="148" cy="158" r="3" fill="${GOLD}" stroke="${OUT}" stroke-width="1.5"/><circle cx="172" cy="158" r="3" fill="${GOLD}" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<circle cx="148" cy="188" r="3" fill="${GOLD}" stroke="${OUT}" stroke-width="1.5"/><circle cx="172" cy="188" r="3" fill="${GOLD}" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<rect x="116" y="224" width="88" height="16" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
+    for (let x = 124; x < 200; x += 11) s += `<line x1="${x}" y1="224" x2="${x}" y2="240" stroke="${OUT}" stroke-width="1.5"/>`;
+  } else if (top && top.cut === "hoodie") {
+    s += `<rect x="138" y="206" width="44" height="30" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M150,128 L146,160 M170,128 L174,160" stroke="${topDark}" stroke-width="2.5"/>`;
+    s += `<path d="M146,124 Q160,138 174,124" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+  } else if (top && top.cut === "anorak") {
     s += `<rect x="168" y="150" width="26" height="30" fill="${topDark}" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M160,128 L160,240" stroke="${OUT}" stroke-width="2" opacity="0.6"/>`;
+    s += `<path d="M146,124 Q160,138 174,124" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+  } else if (isTank) {
+    s += `<path d="M142,124 Q160,148 178,124" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M110,124 Q126,150 122,174 M210,124 Q194,150 198,174" fill="none" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<path d="M120,232 L200,232" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+  } else {
+    s += `<path d="M146,124 Q160,138 174,124" fill="none" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M146,124 Q160,132 174,124" fill="none" stroke="${topDark}" stroke-width="1.5"/>`;
+    s += `<path d="M120,232 L200,232" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+  }
+  if (top && top.camo) {
+    const blobs = CAMO_BLOBS[top.camo];
+    s += `<g clip-path="url(#figTorso)"><ellipse cx="136" cy="200" rx="16" ry="10" fill="${blobs[0]}"/><ellipse cx="184" cy="206" rx="14" ry="9" fill="${blobs[1]}"/><ellipse cx="160" cy="224" rx="12" ry="8" fill="${blobs[2]}"/></g>`;
   }
   if (top && top.word) {
-    s += `<text x="160" y="172" text-anchor="middle" font-size="${top.wordStyle === "script" ? 20 : 15}" fill="${top.accent}" stroke="${OUT}" stroke-width="0.4" ${wordFont(top.wordStyle)}>${escXml(top.word)}</text>`;
+    s += `<text x="160" y="182" text-anchor="middle" font-size="${top.wordStyle === "script" ? 20 : 15}" fill="${top.accent}" stroke="${OUT}" stroke-width="0.4" ${wordFont(top.wordStyle)}>${escXml(top.word)}</text>`;
   }
   if (top && top.verseRef) {
-    s += `<text x="160" y="223" text-anchor="middle" font-size="7" fill="${top.accent}" opacity="0.85" font-family="Arial, Helvetica, sans-serif">${escXml(top.verseRef)}</text>`;
+    s += `<text x="160" y="236" text-anchor="middle" font-size="7" fill="${top.accent}" opacity="0.85" font-family="Arial, Helvetica, sans-serif">${escXml(top.verseRef)}</text>`;
   }
-  // Bandolier (chest slot)
+  // Bandolier (chest slot): diagonal strap with bullet loops.
   if (eq.chest === "bandolier") {
-    s += `<g transform="rotate(38 160 170)"><rect x="105" y="162" width="110" height="16" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>`;
-    for (let x = 112; x < 208; x += 12) s += `<rect x="${x}" y="160" width="6" height="20" fill="#c8a84a" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<g transform="rotate(38 160 175)"><rect x="102" y="166" width="116" height="18" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>`;
+    for (let x = 110; x < 212; x += 12) s += `<rect x="${x}" y="164" width="6" height="22" fill="${GOLD}" stroke="${OUT}" stroke-width="1.5"/>`;
     s += `</g>`;
   }
   // Dog tags (neck slot) — any neck item renders the dog-tags graphic,
   // since the neck slot only holds dog-tags variants.
   if (eq.neck) {
-    s += `<path d="M140,112 Q160,152 180,112" fill="none" stroke="#888" stroke-width="1.5"/>`;
-    s += `<g transform="rotate(-8 152 150)"><rect x="144" y="144" width="16" height="22" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/></g>`;
-    s += `<g transform="rotate(10 170 158)"><rect x="162" y="152" width="16" height="22" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/></g>`;
+    s += `<path d="M138,118 Q160,158 182,118" fill="none" stroke="#888" stroke-width="1.5"/>`;
+    s += `<g transform="rotate(-8 152 154)"><rect x="144" y="148" width="16" height="22" rx="3" fill="#1c1c1c" stroke="${GOLD}" stroke-width="1.5"/><line x1="148" y1="152" x2="148" y2="166" stroke="${GOLD}" stroke-width="1" opacity="0.7"/></g>`;
+    s += `<g transform="rotate(10 170 162)"><rect x="162" y="156" width="16" height="22" rx="3" fill="#1c1c1c" stroke="${GOLD}" stroke-width="1.5"/><line x1="166" y1="160" x2="166" y2="174" stroke="${GOLD}" stroke-width="1" opacity="0.7"/></g>`;
   }
   // Field pouch (waist slot)
   if (eq.waist === "field-pouch") {
-    s += `<rect x="196" y="208" width="30" height="38" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/><line x1="196" y1="218" x2="226" y2="218" stroke="${OUT}" stroke-width="2"/><path d="M211,226 v10 M206,231 h10" stroke="#c8a84a" stroke-width="2"/>`;
+    s += `<rect x="198" y="212" width="30" height="38" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/><line x1="198" y1="222" x2="228" y2="222" stroke="${OUT}" stroke-width="2"/><path d="M213,230 v10 M208,235 h10" stroke="${GOLD}" stroke-width="2"/><circle cx="222" cy="218" r="2.5" fill="${GOLD}" stroke="${OUT}" stroke-width="1"/>`;
   }
   // Gym towel (shoulder slot)
   if (eq.shoulder === "gym-towel") {
-    s += `<path d="M112,118 L104,196 L126,196 L128,118 Z" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="108" y1="150" x2="124" y2="150" stroke="#7a7d4f" stroke-width="4"/><line x1="106" y1="170" x2="125" y2="170" stroke="#7a7d4f" stroke-width="4"/>`;
+    s += `<path d="M110,124 L100,200 L124,200 L128,124 Z" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="106" y1="152" x2="122" y2="152" stroke="#7a7d4f" stroke-width="4"/><line x1="104" y1="172" x2="123" y2="172" stroke="#7a7d4f" stroke-width="4"/><path d="M100,200 l-2,8 M106,200 l-2,8 M112,200 l-2,8" stroke="${OUT}" stroke-width="1.5"/>`;
   }
   // Shaker (hip slot)
   if (eq.hip === "shaker") {
-    s += `<rect x="94" y="212" width="20" height="38" rx="4" fill="#b8bcc0" stroke="${OUT}" stroke-width="2.5"/><rect x="98" y="206" width="12" height="8" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><line x1="94" y1="232" x2="114" y2="232" stroke="#c8a84a" stroke-width="3"/>`;
+    s += `<rect x="92" y="214" width="20" height="38" rx="4" fill="#b8bcc0" stroke="${OUT}" stroke-width="2.5"/><rect x="96" y="208" width="12" height="8" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><line x1="92" y1="234" x2="112" y2="234" stroke="${GOLD}" stroke-width="3"/><line x1="92" y1="224" x2="112" y2="224" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
+  }
+  // Forearms: thick, with muscle curves and shading, hanging at the sides.
+  if (isLongSleeve) {
+    s += `<rect x="106" y="248" width="20" height="14" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<rect x="194" y="248" width="20" height="14" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+  } else {
+    s += `<path d="M106,196 L128,196 L126,258 L110,258 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<path d="M192,196 L214,196 L210,258 L194,258 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    s += `<ellipse cx="117" cy="226" rx="10" ry="18" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="203" cy="226" rx="10" ry="18" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="112" cy="232" rx="3.5" ry="12" fill="#fff" opacity="0.16"/>`;
+    s += `<ellipse cx="198" cy="232" rx="3.5" ry="12" fill="#fff" opacity="0.16"/>`;
   }
   s += `</g>`;
-  // ---- Head ----
-  s += `<rect x="148" y="100" width="24" height="22" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
-  s += `<ellipse cx="124" cy="72" rx="6" ry="10" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
-  s += `<ellipse cx="196" cy="72" rx="6" ry="10" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
-  s += `<ellipse cx="160" cy="72" rx="34" ry="40" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
-  s += `<path d="M126,62 Q128,26 160,24 Q192,26 194,62 Q180,44 160,44 Q140,44 126,62 Z" fill="#241a12" stroke="${OUT}" stroke-width="2.5"/>`;
-  // Beard / stubble wrap AROUND the mouth — drawn before the mouth so the mouth always shows.
+  // ---- Head: expressive face, strong jaw, heavy brows ----
+  s += `<path d="M146,102 L174,102 L172,128 L148,128 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+  s += `<path d="M166,104 L172,104 L172,128 L166,128 Z" fill="#000" opacity="0.10"/>`;
+  s += `<ellipse cx="122" cy="76" rx="7" ry="12" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+  s += `<ellipse cx="198" cy="76" rx="7" ry="12" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+  s += `<path d="M124,76 Q124,82 128,84" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
+  s += `<path d="M196,76 Q196,82 192,84" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
+  // Face: squarer jaw and chin than the old oval.
+  s += `<path d="M128,42 Q126,26 160,24 Q194,26 192,42 L192,78 Q192,104 176,112 Q160,119 144,112 Q128,104 128,78 Z" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+  s += `<path d="M184,60 Q190,84 178,106 Q172,112 166,112 L176,112 Q190,102 192,78 Z" fill="#000" opacity="0.08"/>`;
+  s += `<ellipse cx="152" cy="108" rx="10" ry="4" fill="#fff" opacity="0.14"/>`;
+  // Short military hair with a fringe edge + sideburns.
+  s += `<path d="M128,54 Q124,20 160,18 Q196,20 192,54 Q190,40 178,36 Q170,30 160,34 Q150,28 140,38 Q130,42 128,54 Z" fill="#241a12" stroke="${OUT}" stroke-width="2.5"/>`;
+  s += `<path d="M128,54 L134,54 L134,72 L128,72 Z M186,54 L192,54 L192,72 L186,72 Z" fill="#241a12" stroke="${OUT}" stroke-width="1.5"/>`;
+  // Heavy brows, big eyes with pupils + highlights, strong nose.
+  s += `<path d="M136,60 Q148,53 159,58" fill="none" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>`;
+  s += `<path d="M161,58 Q172,53 184,60" fill="none" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>`;
+  s += `<ellipse cx="147" cy="73" rx="9" ry="10" fill="#fff" stroke="${OUT}" stroke-width="2"/><circle cx="147" cy="74" r="4.5" fill="#1a1a1a"/><circle cx="149" cy="71" r="1.5" fill="#fff"/>`;
+  s += `<ellipse cx="173" cy="73" rx="9" ry="10" fill="#fff" stroke="${OUT}" stroke-width="2"/><circle cx="173" cy="74" r="4.5" fill="#1a1a1a"/><circle cx="175" cy="71" r="1.5" fill="#fff"/>`;
+  s += `<path d="M137,66 Q147,62 157,66 M163,66 Q173,62 183,66" fill="none" stroke="${OUT}" stroke-width="2.5"/>`;
+  s += `<path d="M160,76 Q165,83 161,89 Q158,92 155,90" fill="none" stroke="${OUT}" stroke-width="2"/>`;
+  // Facial hair FIRST — the mouth is drawn after, so it always stays visible.
   if (facialHair === "beard") {
-    s += `<path d="M126,66 Q124,112 145,124 Q160,130 175,124 Q196,112 194,66 Q190,100 178,106 Q170,112 160,112 Q150,112 142,106 Q130,100 126,66 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<path d="M140,86 Q160,78 180,86 Q172,92 160,91 Q148,92 140,86 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M128,66 Q126,108 146,118 Q160,123 174,118 Q194,108 192,66 Q188,96 176,104 Q168,110 160,110 Q152,110 144,104 Q132,96 128,66 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M134,90 Q146,80 160,85 Q174,80 186,90 Q182,98 170,95 Q160,93 150,95 Q138,98 134,90 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M140,108 Q150,112 146,116 M180,108 Q170,112 174,116" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
   } else if (facialHair === "stubble") {
-    s += `<path d="M128,96 Q130,118 148,124 Q160,127 172,124 Q190,118 192,96 Q188,112 172,116 Q160,119 148,116 Q132,112 128,96 Z" fill="#000" opacity="0.14"/>`;
-    s += `<path d="M142,88 Q160,82 178,88 Q170,93 160,92 Q150,93 142,88 Z" fill="#2a2018" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<path d="M130,96 Q132,112 148,117 Q160,120 172,117 Q188,112 190,96 Q186,110 172,114 Q160,117 148,114 Q134,110 130,96 Z" fill="#000" opacity="0.14"/>`;
+    s += `<path d="M142,90 Q160,84 178,90 Q170,95 160,94 Q150,95 142,90 Z" fill="#2a2018" stroke="${OUT}" stroke-width="1.5"/>`;
   } else if (facialHair === "moustache") {
-    // Big handlebar moustache in the reference style, above the mouth —
-    // the mouth itself is drawn after, so it always stays visible.
-    s += `<path d="M134,88 Q146,77 160,82 Q174,77 186,88 Q182,96 170,93 Q160,91 150,93 Q138,96 134,88 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<path d="M136,90 Q132,96 138,98 M184,90 Q188,96 182,98" fill="none" stroke="${OUT}" stroke-width="2"/>`;
+    // Big reference-style handlebar: thick, wide, curled ends, sitting above
+    // the mouth — the mouth itself is drawn after, so it stays visible.
+    s += `<path d="M130,88 Q140,77 160,83 Q180,77 190,88 Q193,96 186,99 Q180,102 173,98 Q167,94 160,95 Q153,94 147,98 Q140,102 134,99 Q127,96 130,88 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M132,92 Q125,100 132,105 M188,92 Q195,100 188,105" fill="none" stroke="${OUT}" stroke-width="2.5" stroke-linecap="round"/>`;
+    s += `<path d="M140,84 Q160,79 180,84" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.18"/>`;
   }
-  // Eyes, brows, nose — always drawn.
-  s += `<ellipse cx="148" cy="68" rx="7" ry="8" fill="#fff" stroke="${OUT}" stroke-width="1.5"/><circle cx="148" cy="69" r="3.5" fill="#1a1a1a"/>`;
-  s += `<ellipse cx="172" cy="68" rx="7" ry="8" fill="#fff" stroke="${OUT}" stroke-width="1.5"/><circle cx="172" cy="69" r="3.5" fill="#1a1a1a"/>`;
-  s += `<path d="M140,56 Q148,52 156,56 M164,56 Q172,52 180,56" fill="none" stroke="${OUT}" stroke-width="2.5"/>`;
-  s += `<path d="M160,72 q4,6 0,10" fill="none" stroke="${OUT}" stroke-width="2"/>`;
   // Mouth — full lips + mouth line, ALWAYS visible.
-  s += `<path d="M146,94 Q160,89 174,94 Q160,100 146,94 Z" fill="#b96a5a" stroke="${OUT}" stroke-width="1.5"/>`;
-  s += `<ellipse cx="160" cy="99" rx="8" ry="4" fill="#c97a68" stroke="${OUT}" stroke-width="1.5"/>`;
-  s += `<path d="M146,95 Q160,99 174,95" fill="none" stroke="#7a3a2e" stroke-width="1.5"/>`;
+  s += `<path d="M146,100 Q160,95 174,100 Q160,108 146,100 Z" fill="#b96a5a" stroke="${OUT}" stroke-width="1.5"/>`;
+  s += `<ellipse cx="160" cy="105" rx="8" ry="4" fill="#c97a68" stroke="${OUT}" stroke-width="1.5"/>`;
+  s += `<path d="M146,101 Q160,105 174,101" fill="none" stroke="#7a3a2e" stroke-width="1.5"/>`;
   // Head items
   if (head && head.id === "beanie") {
-    s += `<path d="M124,58 Q126,22 160,20 Q194,22 196,58 Q180,46 160,46 Q140,46 124,58 Z" fill="#3a3f2a" stroke="${OUT}" stroke-width="2.5"/>`;
-    for (let x = 134; x < 190; x += 12) s += `<line x1="${x}" y1="50" x2="${x}" y2="58" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<path d="M126,56 Q128,20 160,18 Q192,20 194,56 Q180,46 160,46 Q140,46 126,56 Z" fill="#3a3f2a" stroke="${OUT}" stroke-width="2.5"/>`;
+    for (let x = 136; x < 188; x += 12) s += `<line x1="${x}" y1="48" x2="${x}" y2="56" stroke="${OUT}" stroke-width="1.5"/>`;
   } else if (head && head.id === "pith-helmet") {
-    s += `<ellipse cx="160" cy="38" rx="30" ry="14" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><ellipse cx="160" cy="50" rx="46" ry="10" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="160" cy="36" rx="30" ry="14" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><ellipse cx="160" cy="50" rx="48" ry="10" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><line x1="132" y1="36" x2="188" y2="36" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
   } else if (head && head.id === "beret") {
-    s += `<g transform="rotate(-8 158 40)"><ellipse cx="158" cy="40" rx="34" ry="12" fill="#1c2438" stroke="${OUT}" stroke-width="2.5"/></g><path d="M184,34 l10,-4 l-3,6 l8,1 l-11,3 z" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`;
+    s += `<g transform="rotate(-8 158 40)"><ellipse cx="158" cy="40" rx="34" ry="12" fill="#1c2438" stroke="${OUT}" stroke-width="2.5"/></g><path d="M184,34 l10,-4 l-3,6 l8,1 l-11,3 z" fill="${GOLD}" stroke="${OUT}" stroke-width="1"/>`;
   } else if (head && head.id === "aviator-cap") {
-    s += `<path d="M124,60 Q126,24 160,22 Q194,24 196,60 L188,60 Q188,36 160,34 Q132,36 132,60 Z" fill="#4a3220" stroke="${OUT}" stroke-width="2.5"/>`;
-    s += `<rect x="122" y="58" width="10" height="30" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><rect x="188" y="58" width="10" height="30" fill="#4a3220" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M124,58 Q126,20 160,18 Q194,20 196,58 L186,58 Q186,34 160,32 Q134,34 134,58 Z" fill="#4a3220" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<path d="M134,32 Q160,26 186,32" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
+    s += `<rect x="120" y="56" width="12" height="34" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><rect x="188" y="56" width="12" height="34" fill="#4a3220" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M132,88 Q160,100 188,88" fill="none" stroke="${OUT}" stroke-width="2"/>`;
   }
   // Eyes items
   if (eyes && eyes.id === "aviators") {
-    s += `<circle cx="148" cy="68" r="11" fill="#1a1a1a" opacity="0.88" stroke="#c8a84a" stroke-width="2"/><circle cx="172" cy="68" r="11" fill="#1a1a1a" opacity="0.88" stroke="#c8a84a" stroke-width="2"/><line x1="159" y1="66" x2="161" y2="66" stroke="#c8a84a" stroke-width="2"/>`;
+    s += `<circle cx="147" cy="73" r="12" fill="#1a1a1a" opacity="0.88" stroke="${GOLD}" stroke-width="2"/><circle cx="173" cy="73" r="12" fill="#1a1a1a" opacity="0.88" stroke="${GOLD}" stroke-width="2"/><line x1="159" y1="71" x2="161" y2="71" stroke="${GOLD}" stroke-width="2"/><path d="M141,68 l6,-4 M167,68 l6,-4" stroke="#fff" stroke-width="1.5" opacity="0.5"/>`;
   } else if (eyes && eyes.id === "goggles") {
-    s += `<line x1="124" y1="46" x2="196" y2="46" stroke="#3a2f1c" stroke-width="4"/><circle cx="146" cy="46" r="13" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><circle cx="174" cy="46" r="13" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/>`;
+    s += `<line x1="122" y1="44" x2="198" y2="44" stroke="#3a2f1c" stroke-width="4"/><circle cx="146" cy="44" r="14" fill="#9fc4d8" opacity="0.7" stroke="${GOLD}" stroke-width="3"/><circle cx="174" cy="44" r="14" fill="#9fc4d8" opacity="0.7" stroke="${GOLD}" stroke-width="3"/><path d="M140,38 q6,-4 12,0 M168,38 q6,-4 12,0" stroke="#fff" stroke-width="1.5" opacity="0.6" fill="none"/>`;
   }
   // ---- Hands + hand-held items ----
   // Item first, then ONE solid fist with curled-finger arcs gripping its lower
   // part. The item's top always stays fully above the fist — nothing clips.
   function fist(cx, cy) {
-    return `<rect x="${cx - 14}" y="${cy - 14}" width="28" height="30" rx="10" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>` +
-      `<path d="M${cx - 8},${cy - 2} q8,6 16,0 M${cx - 8},${cy + 6} q8,6 16,0" fill="none" stroke="${OUT}" stroke-width="2"/>`;
+    return `<rect x="${cx - 16}" y="${cy - 16}" width="32" height="34" rx="11" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>` +
+      `<path d="M${cx - 9},${cy - 2} q9,7 18,0 M${cx - 9},${cy + 7} q9,7 18,0" fill="none" stroke="${OUT}" stroke-width="2"/>` +
+      `<path d="M${cx - 16},${cy + 4} q-4,8 2,12" fill="none" stroke="${OUT}" stroke-width="2"/>`;
   }
   function openHand(cx, cy) {
-    return `<ellipse cx="${cx}" cy="${cy}" rx="12" ry="13" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>` +
-      `<path d="M${cx - 8},${cy - 12} v-8 M${cx - 3},${cy - 13} v-9 M${cx + 3},${cy - 13} v-9 M${cx + 8},${cy - 12} v-8" stroke="${OUT}" stroke-width="2" stroke-linecap="round"/>`;
+    return `<ellipse cx="${cx}" cy="${cy}" rx="14" ry="15" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>` +
+      `<path d="M${cx - 10},${cy - 14} v-9 M${cx - 4},${cy - 15} v-10 M${cx + 4},${cy - 15} v-10 M${cx + 10},${cy - 14} v-9" stroke="${OUT}" stroke-width="2" stroke-linecap="round"/>`;
   }
   if (hand && hand.held === "bible") {
-    s += `<g transform="rotate(8 214 235)"><rect x="196" y="208" width="36" height="56" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="202" y1="212" x2="202" y2="260" stroke="#c8a84a" stroke-width="1.5"/><path d="M214,220 v18 M207,227 h14" stroke="#c8a84a" stroke-width="2.5"/></g>`;
-    s += openHand(117, 272) + fist(214, 272);
+    s += `<g transform="rotate(8 214 238)"><rect x="196" y="208" width="36" height="58" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="202" y1="212" x2="202" y2="262" stroke="${GOLD}" stroke-width="1.5"/><line x1="228" y1="212" x2="228" y2="262" stroke="#c9b98f" stroke-width="1.5" opacity="0.7"/><path d="M214,220 v18 M207,227 h14" stroke="${GOLD}" stroke-width="2.5"/></g>`;
+    s += openHand(116, 276) + fist(214, 276);
   } else if (hand && hand.held === "cross") {
-    s += `<rect x="210" y="196" width="10" height="74" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="196" y="220" width="38" height="10" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/>`;
-    s += openHand(117, 272) + fist(214, 272);
+    s += `<rect x="208" y="196" width="11" height="76" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="194" y="220" width="40" height="11" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><line x1="211" y1="200" x2="211" y2="268" stroke="${OUT}" stroke-width="1" opacity="0.4"/>`;
+    s += openHand(116, 276) + fist(214, 276);
   } else if (hand && hand.held === "dumbbells") {
-    s += `<rect x="78" y="268" width="62" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="70" y="256" width="10" height="30" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="140" y="256" width="10" height="30" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/>`;
-    s += `<rect x="180" y="268" width="62" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="172" y="256" width="10" height="30" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="242" y="256" width="10" height="30" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/>`;
-    s += fist(110, 272) + fist(212, 272);
+    s += `<rect x="76" y="272" width="66" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="68" y="260" width="10" height="32" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="142" y="260" width="10" height="32" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><line x1="68" y1="268" x2="78" y2="268" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="142" y1="268" x2="152" y2="268" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
+    s += `<rect x="178" y="272" width="66" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="170" y="260" width="10" height="32" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="244" y="260" width="10" height="32" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/>`;
+    s += fist(109, 276) + fist(211, 276);
   } else {
-    s += openHand(117, 272) + openHand(212, 272);
+    s += openHand(116, 276) + openHand(204, 276);
   }
   s += `</svg>`;
   return s;
 }
 
 /* Small shop-card preview SVG for an item. */
+/* Small shop-card preview SVG for an item — reskinned to match the artifact's
+   item art: Saint-jacket boxy cuts on tops (dropped shoulders, ribbed or raw
+   hems, collar detail), baggy camo cargo cuts on bottoms (wide legs, bellows
+   pockets, pooled hems), richer cel shading (highlight + shade strips) and
+   crisper gear detail. Names, prices, IDs, verses, and eras are untouched. */
 function previewSvg(item) {
   const OUT = "#1a1a1a";
   if (item.slot === "top") {
-    const hem = item.cut === "jacket" ? `<rect x="38" y="88" width="44" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` : "";
-    const sleeves = item.cut === "tank" ? "" : `<rect x="28" y="30" width="12" height="26" fill="${item.main}" stroke="${OUT}" stroke-width="2"/><rect x="80" y="30" width="12" height="26" fill="${item.main}" stroke="${OUT}" stroke-width="2"/>`;
-    const word = item.word ? `<text x="60" y="62" text-anchor="middle" font-size="${item.wordStyle === "script" ? 13 : 10}" fill="${item.accent}" ${wordFont(item.wordStyle)}>${escXml(item.word)}</text>` : "";
-    const ref = item.verseRef ? `<text x="60" y="94" text-anchor="middle" font-size="5" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif">${escXml(item.verseRef)}</text>` : "";
-    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><path d="M32,26 L88,26 L84,96 L36,96 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>${sleeves}${hem}${word}${ref}</svg>`;
+    // Boxy Saint-jacket body; tanks get a narrower body with armholes.
+    const body = item.cut === "tank"
+      ? `<path d="M38,24 L82,24 L80,98 L40,98 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>`
+      : `<path d="M30,24 L90,24 L86,98 L34,98 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>`;
+    const shade = item.cut === "tank"
+      ? `<path d="M74,24 L82,24 L80,98 L72,98 Z" fill="#000" opacity="0.13"/>`
+      : `<path d="M78,24 L90,24 L86,98 L74,98 Z" fill="#000" opacity="0.13"/>`;
+    const light = item.cut === "tank"
+      ? `<path d="M38,24 L46,24 L44,98 L40,98 Z" fill="#fff" opacity="0.14"/>`
+      : `<path d="M30,24 L40,24 L38,98 L34,98 Z" fill="#fff" opacity="0.14"/>`;
+    const sleeves = item.cut === "tank" ? "" :
+      `<path d="M22,28 L34,28 L32,56 L22,56 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/><path d="M86,28 L98,28 L98,56 L88,56 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/>` +
+      `<line x1="22" y1="36" x2="32" y2="36" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="88" y1="36" x2="98" y2="36" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
+    const collar = `<path d="M50,24 Q60,34 70,24" fill="none" stroke="${OUT}" stroke-width="2"/>`;
+    let cut = "";
+    if (item.cut === "jacket") {
+      cut = `<rect x="36" y="90" width="48" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
+        `<path d="M50,24 L60,52 M70,24 L60,52" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.7"/>` +
+        `<circle cx="60" cy="62" r="1.8" fill="${OUT}"/><circle cx="60" cy="76" r="1.8" fill="${OUT}"/>`;
+      for (let x = 40; x < 82; x += 8) cut += `<line x1="${x}" y1="90" x2="${x}" y2="98" stroke="${OUT}" stroke-width="1"/>`;
+    } else if (item.cut === "hoodie") {
+      cut = `<path d="M46,24 Q60,10 74,24 Q60,18 46,24 Z" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/>` +
+        `<rect x="46" y="72" width="28" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
+        `<path d="M54,26 L51,40 M66,26 L69,40" stroke="${item.dark}" stroke-width="1.5"/>`;
+    } else if (item.cut === "anorak") {
+      cut = `<path d="M46,24 Q60,10 74,24 Q60,18 46,24 Z" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/>` +
+        `<rect x="64" y="52" width="16" height="18" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
+        `<line x1="60" y1="24" x2="60" y2="98" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
+    } else if (item.cut === "tank") {
+      cut = `<path d="M38,24 Q46,40 42,52 M82,24 Q74,40 78,52" fill="none" stroke="${OUT}" stroke-width="2"/>` +
+        `<path d="M40,92 L80,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+    } else {
+      cut = `<path d="M34,92 L86,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+    }
+    const camo = item.camo ? CAMO_BLOBS[item.camo].map((c, i) =>
+      `<ellipse cx="${44 + i * 14}" cy="${56 + i * 10}" rx="11" ry="7" fill="${c}" opacity="0.85"/>`).join("") : "";
+    const word = item.word ? `<text x="60" y="66" text-anchor="middle" font-size="${item.wordStyle === "script" ? 13 : 10}" fill="${item.accent}" ${wordFont(item.wordStyle)}>${escXml(item.word)}</text>` : "";
+    const ref = item.verseRef ? `<text x="60" y="96" text-anchor="middle" font-size="5" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif">${escXml(item.verseRef)}</text>` : "";
+    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${body}${shade}${light}${camo}${sleeves}${collar}${cut}${word}${ref}</svg>`;
   }
   if (item.slot === "bottom") {
-    const blobs = item.camo ? CAMO_BLOBS[item.camo].map((c, i) => `<ellipse cx="${40 + i * 14}" cy="${52 + i * 12}" rx="10" ry="7" fill="${c}"/>`).join("") : "";
-    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="34" y="16" width="52" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><rect x="34" y="26" width="24" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><rect x="62" y="26" width="24" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>${blobs}<rect x="37" y="44" width="16" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="67" y="44" width="16" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><path d="M34,100 q12,5 24,0 M62,100 q12,5 24,0" fill="none" stroke="${OUT}" stroke-width="2"/></svg>`;
+    if (item.id === "joggers-charcoal") {
+      return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="34" y="16" width="52" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><path d="M34,26 L58,26 L54,92 L38,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M62,26 L86,26 L82,92 L66,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M52,26 L54,92 L50,92 L48,26 Z" fill="#000" opacity="0.10"/><rect x="36" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/></svg>`;
+    }
+    const blobs = item.camo ? CAMO_BLOBS[item.camo].map((c, i) => `<ellipse cx="${40 + i * 14}" cy="${50 + i * 11}" rx="11" ry="7" fill="${c}" opacity="0.85"/>`).join("") : "";
+    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="30" y="16" width="60" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><line x1="44" y1="16" x2="44" y2="26" stroke="${OUT}" stroke-width="1.5"/><line x1="76" y1="16" x2="76" y2="26" stroke="${OUT}" stroke-width="1.5"/><rect x="30" y="26" width="30" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="26" width="30" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M56,26 L60,100 L54,100 L50,26 Z" fill="#000" opacity="0.10"/><path d="M34,26 L40,26 L38,100 L30,100 Z" fill="#fff" opacity="0.12"/>${blobs}<rect x="34" y="44" width="18" height="24" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="34" y1="52" x2="52" y2="52" stroke="${OUT}" stroke-width="1.5"/><rect x="68" y="44" width="18" height="24" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="68" y1="52" x2="86" y2="52" stroke="${OUT}" stroke-width="1.5"/><path d="M30,100 q7.5,5 15,0 t15,0 M60,100 q7.5,5 15,0 t15,0" fill="none" stroke="${OUT}" stroke-width="2"/></svg>`;
   }
   const g = {
-    dogtags: `<path d="M40,20 Q60,50 80,20" fill="none" stroke="#888" stroke-width="1.5"/><rect x="50" y="48" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><rect x="66" y="56" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/>`,
-    pouch: `<rect x="36" y="40" width="48" height="44" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="52" x2="84" y2="52" stroke="${OUT}" stroke-width="2"/><path d="M60,62 v12 M54,68 h12" stroke="#c8a84a" stroke-width="2.5"/>`,
-    aviators: `<circle cx="44" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><circle cx="76" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><line x1="58" y1="56" x2="62" y2="56" stroke="#c8a84a" stroke-width="2.5"/>`,
-    goggles: `<line x1="28" y1="56" x2="92" y2="56" stroke="#3a2f1c" stroke-width="4"/><circle cx="44" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><circle cx="76" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/>`,
-    pith: `<ellipse cx="60" cy="48" rx="26" ry="13" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><ellipse cx="60" cy="60" rx="40" ry="9" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/>`,
-    beret: `<g transform="rotate(-8 60 56)"><ellipse cx="60" cy="56" rx="32" ry="12" fill="#1c2438" stroke="${OUT}" stroke-width="2.5"/></g><path d="M86,48 l10,-4 l-3,6 l8,1 l-11,3 z" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`,
-    cap: `<path d="M30,60 Q32,28 60,26 Q88,28 90,60 L80,60 Q80,38 60,36 Q40,38 40,60 Z" fill="#4a3220" stroke="${OUT}" stroke-width="2.5"/><rect x="28" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><rect x="82" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/>`,
-    beanie: `<path d="M30,66 Q32,28 60,26 Q88,28 90,66 Q75,54 60,54 Q45,54 30,66 Z" fill="#3a3f2a" stroke="${OUT}" stroke-width="2.5"/>`,
-    socks: `<rect x="44" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="36" x2="60" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="66" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="66" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="66" y1="36" x2="82" y2="36" stroke="#7a7d4f" stroke-width="3"/>`,
-    towel: `<path d="M36,26 L52,96 L76,92 L62,22 Z" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="52" x2="66" y2="50" stroke="#7a7d4f" stroke-width="4"/><line x1="48" y1="70" x2="70" y2="68" stroke="#7a7d4f" stroke-width="4"/>`,
-    shaker: `<rect x="48" y="36" width="24" height="48" rx="4" fill="#b8bcc0" stroke="${OUT}" stroke-width="2.5"/><rect x="54" y="28" width="12" height="10" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><line x1="48" y1="60" x2="72" y2="60" stroke="#c8a84a" stroke-width="3"/>`,
-    boots: `<rect x="40" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="36" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><rect x="64" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`,
-    bandolier: `<g transform="rotate(38 60 60)"><rect x="16" y="52" width="88" height="14" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>${[22, 34, 46, 58, 70, 82, 94].map((x) => `<rect x="${x}" y="50" width="5" height="18" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`).join("")}</g>`,
-    cross: `<rect x="55" y="18" width="10" height="84" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="38" y="42" width="44" height="10" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/>`,
-    bible: `<rect x="40" y="28" width="40" height="64" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="47" y1="32" x2="47" y2="88" stroke="#c8a84a" stroke-width="1.5"/><path d="M60,44 v20 M52,52 h16" stroke="#c8a84a" stroke-width="2.5"/>`,
-    dumbbells: `<rect x="14" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="8" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="54" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="58" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="98" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="52" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/>`,
-    "figure-night": `<circle cx="60" cy="32" r="14" fill="#e8b98a" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="48" width="32" height="46" fill="#23241f" stroke="${OUT}" stroke-width="2.5"/><rect x="48" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><rect x="62" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/>`
+    dogtags: `<path d="M40,20 Q60,50 80,20" fill="none" stroke="#888" stroke-width="1.5"/><rect x="50" y="48" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="54" y1="52" x2="54" y2="64" stroke="#c8a84a" stroke-width="1" opacity="0.7"/><rect x="66" y="56" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="70" y1="60" x2="70" y2="72" stroke="#c8a84a" stroke-width="1" opacity="0.7"/>`,
+    pouch: `<rect x="36" y="40" width="48" height="44" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="52" x2="84" y2="52" stroke="${OUT}" stroke-width="2"/><path d="M60,62 v12 M54,68 h12" stroke="#c8a84a" stroke-width="2.5"/><rect x="36" y="40" width="48" height="4" fill="#000" opacity="0.15"/>`,
+    aviators: `<circle cx="44" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><circle cx="76" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><line x1="58" y1="56" x2="62" y2="56" stroke="#c8a84a" stroke-width="2.5"/><path d="M38,52 l7,-5 M70,52 l7,-5" stroke="#fff" stroke-width="1.5" opacity="0.5"/>`,
+    goggles: `<line x1="28" y1="56" x2="92" y2="56" stroke="#3a2f1c" stroke-width="4"/><circle cx="44" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><circle cx="76" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><path d="M38,48 q6,-4 12,0 M70,48 q6,-4 12,0" stroke="#fff" stroke-width="1.5" opacity="0.6" fill="none"/>`,
+    pith: `<ellipse cx="60" cy="48" rx="26" ry="13" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><ellipse cx="60" cy="60" rx="40" ry="9" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="48" x2="84" y2="48" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/><circle cx="60" cy="40" r="2.5" fill="${OUT}"/>`,
+    beret: `<g transform="rotate(-8 60 56)"><ellipse cx="60" cy="56" rx="32" ry="12" fill="#1c2438" stroke="${OUT}" stroke-width="2.5"/></g><path d="M86,48 l10,-4 l-3,6 l8,1 l-11,3 z" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/><path d="M34,58 Q60,50 86,58" fill="none" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`,
+    cap: `<path d="M30,60 Q32,28 60,26 Q88,28 90,60 L80,60 Q80,38 60,36 Q40,38 40,60 Z" fill="#4a3220" stroke="${OUT}" stroke-width="2.5"/><rect x="28" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><rect x="82" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><path d="M40,40 Q60,32 80,40" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`,
+    beanie: `<path d="M30,66 Q32,28 60,26 Q88,28 90,66 Q75,54 60,54 Q45,54 30,66 Z" fill="#3a3f2a" stroke="${OUT}" stroke-width="2.5"/><line x1="40" y1="52" x2="40" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="52" y1="50" x2="52" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="64" y1="50" x2="64" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="76" y1="52" x2="76" y2="62" stroke="${OUT}" stroke-width="1.5"/>`,
+    socks: `<rect x="44" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="36" x2="60" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="66" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="66" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="66" y1="36" x2="82" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="44" y="70" width="8" height="12" fill="#000" opacity="0.12"/><rect x="66" y="70" width="8" height="12" fill="#000" opacity="0.12"/>`,
+    towel: `<path d="M36,26 L52,96 L76,92 L62,22 Z" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="52" x2="66" y2="50" stroke="#7a7d4f" stroke-width="4"/><line x1="48" y1="70" x2="70" y2="68" stroke="#7a7d4f" stroke-width="4"/><path d="M52,96 l-2,6 M58,95 l-2,6 M64,94 l-2,6" stroke="${OUT}" stroke-width="1.5"/>`,
+    shaker: `<rect x="48" y="36" width="24" height="48" rx="4" fill="#b8bcc0" stroke="${OUT}" stroke-width="2.5"/><rect x="54" y="28" width="12" height="10" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><line x1="48" y1="60" x2="72" y2="60" stroke="#c8a84a" stroke-width="3"/><line x1="48" y1="48" x2="72" y2="48" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="48" y1="70" x2="72" y2="70" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`,
+    boots: `<rect x="40" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="36" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><rect x="64" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><path d="M44,36 L56,44 M56,36 L44,44 M44,52 L56,60 M56,52 L44,60 M68,36 L80,44 M80,36 L68,44 M68,52 L80,60 M80,52 L68,60" stroke="#8a7a5c" stroke-width="1.5"/><path d="M40,78 Q50,72 60,78 M64,78 Q74,72 84,78" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`,
+    bandolier: `<g transform="rotate(38 60 60)"><rect x="16" y="52" width="88" height="14" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>${[22, 34, 46, 58, 70, 82, 94].map((x) => `<rect x="${x}" y="50" width="5" height="18" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`).join("")}</g><line x1="20" y1="52" x2="100" y2="52" stroke="#000" stroke-width="1" opacity="0.25"/>`,
+    cross: `<rect x="55" y="18" width="10" height="84" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="38" y="42" width="44" height="10" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><line x1="58" y1="22" x2="58" y2="98" stroke="${OUT}" stroke-width="1" opacity="0.4"/><line x1="42" y1="45" x2="78" y2="45" stroke="${OUT}" stroke-width="1" opacity="0.4"/>`,
+    bible: `<rect x="40" y="28" width="40" height="64" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="47" y1="32" x2="47" y2="88" stroke="#c8a84a" stroke-width="1.5"/><line x1="74" y1="32" x2="74" y2="88" stroke="#c9b98f" stroke-width="1.5" opacity="0.7"/><path d="M60,44 v20 M52,52 h16" stroke="#c8a84a" stroke-width="2.5"/><line x1="40" y1="84" x2="80" y2="84" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`,
+    dumbbells: `<rect x="14" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="8" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="54" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="58" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="98" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="52" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><line x1="14" y1="59" x2="54" y2="59" stroke="#000" stroke-width="1" opacity="0.4"/><line x1="58" y1="59" x2="98" y2="59" stroke="#000" stroke-width="1" opacity="0.4"/>`,
+    "figure-night": `<circle cx="60" cy="32" r="14" fill="#e8b98a" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="48" width="32" height="46" fill="#23241f" stroke="${OUT}" stroke-width="2.5"/><rect x="48" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><rect x="62" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><path d="M44,56 L76,56" stroke="#000" stroke-width="1.5" opacity="0.4"/><circle cx="60" cy="30" r="3" fill="#1a1a1a"/>`
   }[item.glyph] || `<circle cx="60" cy="60" r="20" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/>`;
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${g}</svg>`;
 }
@@ -1147,6 +1327,7 @@ if (typeof module !== "undefined" && module.exports) {
     SHOP_ITEMS, ITEM_BY_ID, EMPTY_EQUIPPED, CRATES, CRATE_BY_ID, scrapValue,
     resolveCrateReward, wcMult, wcBoosted, WC_MULT_END, migrateState,
     syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS, SEED_LABELS,
+    charImageFor, charTier, charBulk,
     buildCharacterSvg, previewSvg, slotFilter, eraBadge, eraMatches,
     prestigeToState, ACHIEVEMENTS, QUESTS, achievementEarned, awardAchievements,
     questProgress, checkQuests };
@@ -1960,7 +2141,9 @@ if (typeof document !== "undefined") {
   /* ----- Character ----- */
   function renderCharacter() {
     const latest = state.weights.length ? state.weights[state.weights.length - 1].weight : state.profile.startWeight;
-    $("charFigure").innerHTML = buildCharacterSvg(state.equipped, state.facialHair, latest, state.figureVariant);
+    const charImg = charImageFor(state.equipped, state.facialHair, state.figureVariant);
+    const charScale = charBulk(latest).toFixed(3);
+    $("charFigure").innerHTML = `<div class="char-photo-wrap"><img class="char-photo${charImg.night ? " char-night" : ""}" src="${charImg.src}"${charImg.fallback ? " data-fb=\"" + charImg.fallback + "\" onerror=\"if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb='';}\"" : ""} alt="Character figure" style="transform:scale(${charScale})"></div>`;
     const level = levelForXp(state.xpTotal);
     $("charStats").innerHTML = "Weight: <b>" + latest + " lbs</b> (goal " + state.profile.goalWeight + ") · Level " + level + " " + esc(rankForLevel(level)) + " · " + state.xpTotal + " XP · " + state.coins.toLocaleString() + " WC";
     const faces = [["clean", "Clean shaven"], ["stubble", "Stubble"], ["beard", "Beard"], ["moustache", "Moustache"]];

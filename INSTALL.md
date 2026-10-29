@@ -162,3 +162,48 @@ xp:null — labeling never moves any XP total. Phones that already synced
 get the same seeded labels via a backfill in the sync (only lifts still
 saying "Seeded" are relabeled; re-saved lifts untouched). Service worker
 bumped to v6 so this app.js change propagates to phones that installed v5.
+
+## Shop + character polish round (local only, NOT deployed)
+- Verses: all 16 scripture items now carry the FULL KJV verse + plain-language
+  meaning + reference in the Details ("!") panel; garments still show only the
+  reference at the hem. Saint -> Dan 7:18, Camo Verse Hoodie -> 2 Tim 2:3
+  (wordmark SOLDIER), both user-approved delegated picks (2026-10-29).
+  Shepherd expanded to the full Psalm 23; Armor expanded to Eph 6:10-17.
+  FAITH -> Heb 11:1, FEAR NOT -> Isa 41:10 (classic fills, flagged pending
+  his correction); dogtag-micah -> Mic 6:8 (inferred from the name, flagged).
+  Night Ops Tank stays verse-less by design; non-scripture gear has no verse.
+- Item previews reskinned (modest): Saint-jacket boxy cuts, baggy cargo cuts,
+  richer cel shading, crisper gear detail. Names, prices, IDs, verses, eras
+  unchanged.
+- Character v2: rebuilt to the 'GIVE 'EM LEAD' reference (bold outlines,
+  layered cel shading, muscular proportions, expressive face, gold-trim
+  jacket, crisscross-laced tall boots). Base stays tee + shorts + ankle
+  boots; moustache stays toggleable with the mouth always visible; mass
+  formula unchanged (1.000 / 1.101 / 1.160). Also fixed: the Night Ops
+  Figure variant now actually renders the night palette (the app stored
+  "figure-night" but the builder only matched "night").
+- Shop polish: item windows much more transparent (blur + translucent wash)
+  over the animated green shop background; details panels keep a darker wash
+  for readability. Logic untouched.
+- sw.js bumped v6 -> v7. The eventual deploy push MUST include sw.js.
+- CHARACTER SHIPS ONLY AFTER THE USER APPROVES THE PREVIEW
+  (~/workspace/char-preview.html — preview only, never deploys).
+
+- Realistic character photos (slightly-cartoonish style, user-approved):
+  Character tab now shows generated photos instead of the code-drawn SVG
+  figure (the SVG builder is retained but no longer rendered). 8 photos in
+  assets/character/: base, base-moustache, fullkit, fullkit-moustache,
+  base-dogtags, base-bible, base-loadout, base-saint-jacket. Tier is
+  full-kit if a jacket, bandolier, pouch, cap, goggles, or tall boots are
+  equipped, else base; slot photos override the tier photo for clean
+  faces only (Saint jacket > dogtags+bible > dogtags > bible), with an
+  onerror fallback to the tier photo. Moustache toggle still works;
+  stubble/beard fall back to the clean photo of the tier. Mass uses the
+  same formula as a CSS scale (1.000 / 1.101 / 1.160 at 140 / 152.6 /
+  165 lbs). Night Ops Figure ("figure-night" or "night") applies a dark
+  blue-tinted CSS filter. Shop thumbnails keep the SVG reskin.
+- sw.js bumped v7 -> v8 (character photos added to the precache). The
+  eventual deploy push MUST include sw.js, and the 8 character photos
+  are binaries: they need the browser upload route BEFORE the text push,
+  or the v8 service worker precache fails.
+- Preview: ~/workspace/char-preview.html (preview only, never deploys).
