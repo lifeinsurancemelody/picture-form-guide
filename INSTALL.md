@@ -207,3 +207,10 @@ bumped to v6 so this app.js change propagates to phones that installed v5.
   are binaries: they need the browser upload route BEFORE the text push,
   or the v8 service worker precache fails.
 - Preview: ~/workspace/char-preview.html (preview only, never deploys).
+
+## Shop upgrade round (local only, NOT deployed)
+- Shop background is now a generated depot scene (assets/shop/depot-scene.webp, 366KB, precached, sw.js v10): sergeant at a crate-table with a glowing laptop, mug, bullets, papers, hangar + aircraft behind. It breathes via CSS (shopBreathe), the laptop area glows in a slow pulse, fine dust drifts; all disabled under prefers-reduced-motion.
+- Typing video: attempted once via media.generate_video; it failed with a local worker file-access error and was NOT retried (per instruction). The CSS-animated static scene ships instead — breathing + glow + dust give the alive feel; true typing motion would need a video and remains a future option.
+- Layout toward the MULTIPLAYER DEPOT reference: left-side glass menu panels, glassy supply-drop cards (Rare glows green), title + counters head with a NEXT DEPOT CREDIT progress bar. Items still overlay and scroll over the scene.
+- Clothes reskin toward camo urban street: tops are boxier/oversized with denser camo prints and a hem tag; bottoms are wider baggy street cargos with bigger bellows pockets, side stripe, and drawstrings. Names, prices, IDs, verses, and eras untouched.
+- Deploy note: depot-scene.webp is a binary — upload via the browser route BEFORE the text push (styles.css, sw.js v10, app.js, index.html), or the v10 precache fails.

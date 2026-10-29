@@ -628,3 +628,56 @@ body.shop-active .shop-foot .price { font-size: 15px; }
 @media (prefers-reduced-motion: reduce) {
   .char-photo-wrap, .char-photo-wrap::after { animation: none !important; }
 }
+
+/* ---------- Shop upgrade round: depot scene + depot layout ----------
+   Shop tab background is now a real scene (sergeant at a crate-table with
+   a laptop) instead of the abstract CSS depot backdrop. The scene breathes
+   gently, the laptop area glows in a slow pulse, and fine dust drifts.
+   Layout moves toward the MULTIPLAYER DEPOT reference: left-side glass
+   menu panels, glassy supply-drop cards (Rare glows green), and a
+   NEXT DEPOT CREDIT progress bar under a title + counters head.
+   Presentation only — all shop logic is untouched. */
+/* Scene: full-bleed photo, breathing wrap so motion never fights filters. */
+.shop-scene-wrap { position: absolute; inset: 0; overflow: hidden; animation: shopBreathe 7s ease-in-out infinite; }
+.shop-scene { width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; display: block; filter: brightness(0.82) saturate(1.05); }
+/* Typing illusion: a second frame with hands shifted on the keys, toggled
+   over the base frame at typing rhythm (~3 frame-changes/sec). Pure CSS so
+   it rides inside the breathing wrap with no JS timer to leak; the hard
+   49.9%/50% cut avoids any crossfade blur between the two hand poses. */
+.shop-scene-type { position: absolute; inset: 0; opacity: 0; animation: typeToggle 0.6s linear infinite; }
+@keyframes typeToggle { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
+/* Laptop glow: sits over the scene's laptop area (center-bottom), pulses. */
+.shop-scene-glow { position: absolute; left: 28%; top: 52%; width: 34%; height: 32%; background: radial-gradient(ellipse at center, rgba(140, 255, 170, 0.28), rgba(125, 216, 125, 0.10) 45%, transparent 70%); animation: glowPulse 3.5s ease-in-out infinite alternate; pointer-events: none; }
+/* Fine drifting dust motes over the scene. */
+.shop-dust { position: absolute; inset: 0; opacity: 0.35; background-image: radial-gradient(rgba(232, 230, 223, 0.7) 1px, transparent 1.6px); background-size: 90px 90px; animation: dustDrift 26s linear infinite; pointer-events: none; }
+@keyframes shopBreathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.025) translateY(-4px); }
+}
+@keyframes glowPulse {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+@keyframes dustDrift {
+  from { background-position: 0 0; opacity: 0.22; }
+  50% { opacity: 0.4; }
+  to { background-position: 60px -120px; opacity: 0.22; }
+}
+/* Depot head: green rule under the title, counters as dark chips. */
+body.shop-active .depot-head { border-bottom: 2px solid rgba(125, 216, 125, 0.35); padding-bottom: 10px; }
+body.shop-active .depot-bal .bal-line { display: inline-block; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(232, 230, 223, 0.18); border-radius: 999px; padding: 3px 10px; margin: 2px 0 2px 6px; }
+/* NEXT DEPOT CREDIT bar, styled like the reference's top-right bar. */
+.rotation-wrap { margin: 10px 0 2px; }
+.rotation-label { display: block; text-align: right; font-size: 10px; font-weight: 800; letter-spacing: 0.22em; color: var(--green); margin-bottom: 4px; }
+body.shop-active .rotation-bar { height: 6px; background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(232, 230, 223, 0.18); }
+/* Left-side glass menu panels (console) + glassy supply-drop cards. */
+body.shop-active .shop-console { background: linear-gradient(180deg, rgba(10, 16, 10, 0.72), rgba(8, 12, 8, 0.82)); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(125, 216, 125, 0.25); border-radius: 12px; padding: 12px; }
+body.shop-active .shop-console .chips { flex-direction: column; }
+body.shop-active .shop-console .chips button { width: 100%; text-align: left; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(232, 230, 223, 0.14); }
+body.shop-active .shop-console .chips button:hover { border-color: rgba(125, 216, 125, 0.5); }
+body.shop-active .crate-card { background: linear-gradient(180deg, rgba(22, 28, 18, 0.42), rgba(12, 16, 10, 0.55)); }
+body.shop-active .crate-card.rare-lit { border-color: rgba(125, 216, 125, 0.8); box-shadow: 0 0 18px rgba(125, 216, 125, 0.45), inset 0 0 12px rgba(125, 216, 125, 0.15); }
+@media (prefers-reduced-motion: reduce) {
+  .shop-scene-wrap, .shop-scene-glow, .shop-dust, .shop-scene-type { animation: none !important; }
+  .shop-scene-type { opacity: 0 !important; }
+}

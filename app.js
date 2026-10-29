@@ -1248,52 +1248,53 @@ function buildCharacterSvg(equipped, facialHair, weight, variant) {
 function previewSvg(item) {
   const OUT = "#1a1a1a";
   if (item.slot === "top") {
-    // Boxy Saint-jacket body; tanks get a narrower body with armholes.
+    // Boxy oversized street body; tanks get a narrower body with armholes.
     const body = item.cut === "tank"
-      ? `<path d="M38,24 L82,24 L80,98 L40,98 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>`
-      : `<path d="M30,24 L90,24 L86,98 L34,98 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>`;
+      ? `<path d="M36,24 L84,24 L82,98 L38,98 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>`
+      : `<path d="M26,24 L94,24 L90,98 L30,98 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/>`;
     const shade = item.cut === "tank"
-      ? `<path d="M74,24 L82,24 L80,98 L72,98 Z" fill="#000" opacity="0.13"/>`
-      : `<path d="M78,24 L90,24 L86,98 L74,98 Z" fill="#000" opacity="0.13"/>`;
+      ? `<path d="M76,24 L84,24 L82,98 L74,98 Z" fill="#000" opacity="0.13"/>`
+      : `<path d="M82,24 L94,24 L90,98 L78,98 Z" fill="#000" opacity="0.13"/>`;
     const light = item.cut === "tank"
-      ? `<path d="M38,24 L46,24 L44,98 L40,98 Z" fill="#fff" opacity="0.14"/>`
-      : `<path d="M30,24 L40,24 L38,98 L34,98 Z" fill="#fff" opacity="0.14"/>`;
+      ? `<path d="M36,24 L44,24 L42,98 L38,98 Z" fill="#fff" opacity="0.14"/>`
+      : `<path d="M26,24 L36,24 L34,98 L30,98 Z" fill="#fff" opacity="0.14"/>`;
     const sleeves = item.cut === "tank" ? "" :
-      `<path d="M22,28 L34,28 L32,56 L22,56 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/><path d="M86,28 L98,28 L98,56 L88,56 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/>` +
-      `<line x1="22" y1="36" x2="32" y2="36" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="88" y1="36" x2="98" y2="36" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
+      `<path d="M18,28 L30,28 L28,58 L18,58 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/><path d="M90,28 L102,28 L102,58 L92,58 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/>` +
+      `<line x1="18" y1="38" x2="28" y2="38" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="92" y1="38" x2="102" y2="38" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
     const collar = `<path d="M50,24 Q60,34 70,24" fill="none" stroke="${OUT}" stroke-width="2"/>`;
     let cut = "";
     if (item.cut === "jacket") {
-      cut = `<rect x="36" y="90" width="48" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
-        `<path d="M50,24 L60,52 M70,24 L60,52" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.7"/>` +
+      cut = `<rect x="32" y="90" width="56" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
+        `<path d="M48,24 L60,52 M72,24 L60,52" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.7"/>` +
         `<circle cx="60" cy="62" r="1.8" fill="${OUT}"/><circle cx="60" cy="76" r="1.8" fill="${OUT}"/>`;
-      for (let x = 40; x < 82; x += 8) cut += `<line x1="${x}" y1="90" x2="${x}" y2="98" stroke="${OUT}" stroke-width="1"/>`;
+      for (let x = 36; x < 88; x += 8) cut += `<line x1="${x}" y1="90" x2="${x}" y2="98" stroke="${OUT}" stroke-width="1"/>`;
     } else if (item.cut === "hoodie") {
-      cut = `<path d="M46,24 Q60,10 74,24 Q60,18 46,24 Z" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/>` +
-        `<rect x="46" y="72" width="28" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
-        `<path d="M54,26 L51,40 M66,26 L69,40" stroke="${item.dark}" stroke-width="1.5"/>`;
+      cut = `<path d="M44,24 Q60,10 76,24 Q60,18 44,24 Z" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/>` +
+        `<rect x="42" y="72" width="36" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
+        `<path d="M52,26 L49,40 M68,26 L71,40" stroke="${item.dark}" stroke-width="1.5"/>`;
     } else if (item.cut === "anorak") {
-      cut = `<path d="M46,24 Q60,10 74,24 Q60,18 46,24 Z" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/>` +
-        `<rect x="64" y="52" width="16" height="18" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
+      cut = `<path d="M44,24 Q60,10 76,24 Q60,18 44,24 Z" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/>` +
+        `<rect x="62" y="52" width="20" height="18" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/>` +
         `<line x1="60" y1="24" x2="60" y2="98" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`;
     } else if (item.cut === "tank") {
-      cut = `<path d="M38,24 Q46,40 42,52 M82,24 Q74,40 78,52" fill="none" stroke="${OUT}" stroke-width="2"/>` +
-        `<path d="M40,92 L80,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+      cut = `<path d="M36,24 Q44,40 40,52 M84,24 Q76,40 80,52" fill="none" stroke="${OUT}" stroke-width="2"/>` +
+        `<path d="M38,92 L82,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
     } else {
-      cut = `<path d="M34,92 L86,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
+      cut = `<path d="M30,92 L90,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
     }
-    const camo = item.camo ? CAMO_BLOBS[item.camo].map((c, i) =>
-      `<ellipse cx="${44 + i * 14}" cy="${56 + i * 10}" rx="11" ry="7" fill="${c}" opacity="0.85"/>`).join("") : "";
+    const camo = item.camo ? [0, 1, 2, 3, 4, 5].map((i) =>
+      `<ellipse cx="${36 + i * 13}" cy="${48 + (i % 2) * 24}" rx="12" ry="8" fill="${CAMO_BLOBS[item.camo][i % 3]}" opacity="0.85"/>`).join("") : "";
     const word = item.word ? `<text x="60" y="66" text-anchor="middle" font-size="${item.wordStyle === "script" ? 13 : 10}" fill="${item.accent}" ${wordFont(item.wordStyle)}>${escXml(item.word)}</text>` : "";
     const ref = item.verseRef ? `<text x="60" y="96" text-anchor="middle" font-size="5" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif">${escXml(item.verseRef)}</text>` : "";
-    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${body}${shade}${light}${camo}${sleeves}${collar}${cut}${word}${ref}</svg>`;
+    const hemTag = `<rect x="${item.cut === "tank" ? 72 : 80}" y="86" width="9" height="7" fill="${item.accent}" stroke="${OUT}" stroke-width="1"/>`;
+    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${body}${shade}${light}${camo}${sleeves}${collar}${cut}${word}${ref}${hemTag}</svg>`;
   }
   if (item.slot === "bottom") {
     if (item.id === "joggers-charcoal") {
-      return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="34" y="16" width="52" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><path d="M34,26 L58,26 L54,92 L38,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M62,26 L86,26 L82,92 L66,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M52,26 L54,92 L50,92 L48,26 Z" fill="#000" opacity="0.10"/><rect x="36" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="34" y="16" width="52" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><path d="M34,26 L58,26 L54,92 L38,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M62,26 L86,26 L82,92 L66,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M52,26 L54,92 L50,92 L48,26 Z" fill="#000" opacity="0.10"/><line x1="38" y1="30" x2="38" y2="82" stroke="${item.accent}" stroke-width="2" opacity="0.55"/><rect x="36" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/></svg>`;
     }
-    const blobs = item.camo ? CAMO_BLOBS[item.camo].map((c, i) => `<ellipse cx="${40 + i * 14}" cy="${50 + i * 11}" rx="11" ry="7" fill="${c}" opacity="0.85"/>`).join("") : "";
-    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="30" y="16" width="60" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><line x1="44" y1="16" x2="44" y2="26" stroke="${OUT}" stroke-width="1.5"/><line x1="76" y1="16" x2="76" y2="26" stroke="${OUT}" stroke-width="1.5"/><rect x="30" y="26" width="30" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="26" width="30" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M56,26 L60,100 L54,100 L50,26 Z" fill="#000" opacity="0.10"/><path d="M34,26 L40,26 L38,100 L30,100 Z" fill="#fff" opacity="0.12"/>${blobs}<rect x="34" y="44" width="18" height="24" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="34" y1="52" x2="52" y2="52" stroke="${OUT}" stroke-width="1.5"/><rect x="68" y="44" width="18" height="24" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="68" y1="52" x2="86" y2="52" stroke="${OUT}" stroke-width="1.5"/><path d="M30,100 q7.5,5 15,0 t15,0 M60,100 q7.5,5 15,0 t15,0" fill="none" stroke="${OUT}" stroke-width="2"/></svg>`;
+    const blobs = item.camo ? [0, 1, 2, 3, 4, 5].map((i) => `<ellipse cx="${34 + i * 13}" cy="${42 + (i % 2) * 26}" rx="12" ry="8" fill="${CAMO_BLOBS[item.camo][i % 3]}" opacity="0.85"/>`).join("") : "";
+    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="26" y="16" width="68" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><line x1="40" y1="16" x2="40" y2="26" stroke="${OUT}" stroke-width="1.5"/><line x1="80" y1="16" x2="80" y2="26" stroke="${OUT}" stroke-width="1.5"/><path d="M58,26 L56,36 M62,26 L64,36" stroke="${item.dark}" stroke-width="1.5"/><rect x="26" y="26" width="34" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="26" width="34" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M56,26 L60,100 L54,100 L50,26 Z" fill="#000" opacity="0.10"/><path d="M30,26 L36,26 L34,100 L26,100 Z" fill="#fff" opacity="0.12"/>${blobs}<rect x="30" y="44" width="22" height="26" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="30" y1="53" x2="52" y2="53" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="44" width="22" height="26" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="66" y1="53" x2="88" y2="53" stroke="${OUT}" stroke-width="1.5"/><line x1="29" y1="30" x2="29" y2="96" stroke="${item.accent}" stroke-width="2" opacity="0.55"/><path d="M26,100 q8.5,5 17,0 t17,0 M60,100 q8.5,5 17,0 t17,0" fill="none" stroke="${OUT}" stroke-width="2"/></svg>`;
   }
   const g = {
     dogtags: `<path d="M40,20 Q60,50 80,20" fill="none" stroke="#888" stroke-width="1.5"/><rect x="50" y="48" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="54" y1="52" x2="54" y2="64" stroke="#c8a84a" stroke-width="1" opacity="0.7"/><rect x="66" y="56" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="70" y1="60" x2="70" y2="72" stroke="#c8a84a" stroke-width="1" opacity="0.7"/>`,
@@ -1381,6 +1382,63 @@ if (typeof document !== "undefined") {
       if (p && p.catch) p.catch(() => blip());
     } catch (e) { blip(); }
   }
+  /* ----- Shop ambience: procedural depot-hangar sound, no audio files. -----
+     Soft brown noise through a lowpass filter plus a low sine hum, kept
+     quiet. Tune with the SHOP_AMB_* constants. The 5.6s levelup stinger is
+     never looped as ambience — far too short and repetitive. */
+  const SHOP_AMB_MASTER = 0.08, SHOP_AMB_NOISE = 0.6, SHOP_AMB_HUM = 0.2,
+        SHOP_AMB_HUM_FREQ = 55, SHOP_AMB_LOWPASS = 320;
+  let shopAmb = null;
+  function startShopAmbience() {
+    if (state.muted || shopAmb) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const t = audioCtx.currentTime;
+      const master = audioCtx.createGain();
+      master.gain.setValueAtTime(0.0001, t);
+      master.gain.linearRampToValueAtTime(SHOP_AMB_MASTER, t + 1.5);
+      master.connect(audioCtx.destination);
+      const len = audioCtx.sampleRate * 2;
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        last = (last + 0.02 * w) / 1.02;
+        d[i] = last * 3.5;
+      }
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = SHOP_AMB_LOWPASS;
+      const ng = audioCtx.createGain(); ng.gain.value = SHOP_AMB_NOISE;
+      src.connect(lp); lp.connect(ng); ng.connect(master);
+      src.start();
+      const hum = audioCtx.createOscillator();
+      hum.type = "sine"; hum.frequency.value = SHOP_AMB_HUM_FREQ;
+      const hg = audioCtx.createGain(); hg.gain.value = SHOP_AMB_HUM;
+      hum.connect(hg); hg.connect(master);
+      hum.start();
+      shopAmb = { src, hum, master };
+    } catch (e) {}
+  }
+  function stopShopAmbience() {
+    if (!shopAmb) return;
+    const nodes = shopAmb;
+    shopAmb = null;
+    try {
+      const t = audioCtx.currentTime;
+      nodes.master.gain.cancelScheduledValues(t);
+      nodes.master.gain.setValueAtTime(nodes.master.gain.value, t);
+      nodes.master.gain.linearRampToValueAtTime(0.0001, t + 0.4);
+      setTimeout(() => {
+        try { nodes.src.stop(); } catch (e) {}
+        try { nodes.hum.stop(); } catch (e) {}
+        try { nodes.master.disconnect(); } catch (e) {}
+      }, 500);
+    } catch (e) {}
+  }
   function showBanner(html) {
     const b = $("banner");
     b.innerHTML = html;
@@ -1462,8 +1520,14 @@ if (typeof document !== "undefined") {
     if (tab === "log") renderFood();
     if (tab === "shop") renderShop();
     if (tab === "character") renderCharacter();
+    if (tab === "shop") startShopAmbience(); else stopShopAmbience();
   }
   document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { stopShopAmbience(); return; }
+    const shopTab = document.getElementById("tab-shop");
+    if (shopTab && shopTab.classList.contains("active")) startShopAmbience();
+  });
 
   /* ----- Days tab ----- */
   function lastLiftText(exId) {
@@ -1777,7 +1841,7 @@ if (typeof document !== "undefined") {
     blip();
     notifyAwards();
   });
-  $("muteBtn").addEventListener("click", () => { state.muted = !state.muted; persist(); renderHeader(); });
+  $("muteBtn").addEventListener("click", () => { state.muted = !state.muted; persist(); renderHeader(); if (state.muted) stopShopAmbience(); else { const shopTab = document.getElementById("tab-shop"); if (shopTab && shopTab.classList.contains("active")) startShopAmbience(); } });
 
   /* ----- Backup ----- */
   $("exportBtn").addEventListener("click", () => {
