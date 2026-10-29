@@ -24,6 +24,7 @@ const EXERCISES = [
   { id: "bench-press", day: "push", name: "Bench Press", photo: "assets/photos/bench-press.jpg", load: "db", sets: 4, repMin: 8, repMax: 12, weight: 40, display: "40 lbs", cues: "Shoulder blades pinched, slight arch, touch and press without bouncing." },
   { id: "overhead-press", day: "push", name: "Overhead Press", photo: "assets/photos/overhead-press.jpg", load: "db", sets: 3, repMin: 10, repMax: 15, weight: 20, display: "20s", cues: "Ribs down, press straight up, head through at the top." },
   { id: "incline-press", day: "push", name: "Incline Press", photo: "assets/photos/incline-press.jpg", load: "db", sets: 3, repMin: 10, repMax: 15, weight: 20, display: "20s", cues: "Bench at about 30 degrees, touch upper chest, press up and slightly back." },
+  { id: "push-cable-pushdown", day: "push", name: "Cable Pushdowns", photo: "assets/photos/cable-pushdown.jpg", load: "cable", sets: 3, repMin: 12, repMax: 15, weight: 50, display: "50 lbs", cues: "Push-day press: elbows pinned to your ribs, full lockout, slow return. Tracked separately from the arms-day pushdown." },
   // Pull
   { id: "lat-pulldown", day: "pull", name: "Lat Pulldown", photo: "assets/photos/lat-pulldown.jpg", load: "cable", sets: 4, repMin: 8, repMax: 12, weight: 80, display: "80 lbs", cues: "Chest up, pull elbows to your ribs, full stretch at the top." },
   { id: "single-arm-row", day: "pull", name: "Single-Arm Rows", photo: "assets/photos/single-arm-row.jpg", load: "db", sets: 3, repMin: 10, repMax: 12, weight: 40, display: "40 lbs", cues: "One hand on the bench, pull to your hip, no twisting." },
@@ -113,31 +114,44 @@ function rankInsigniaSvg(level, size) {
   const px = size || 44;
   return `<svg viewBox="0 0 60 92" width="${px}" height="${Math.round(px * 92 / 60)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Level ${level} insignia">${inner}</svg>`;
 }
-/* 4-day shop shelf: the 36-item catalog splits into 4 groups of 9, rotating
-   daily from the anchor. The next rotation is always at midnight. */
+/* 4-day shop shelf: the catalog splits into 4 near-even groups, rotating
+   daily from the anchor. The next rotation is always at midnight. With the
+   current 40-item catalog the groups are 10/10/10/10. */
 const SHELF_ANCHOR = Date.UTC(2026, 9, 27);
 function shelfDayIndex(d) {
   const day = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
   return ((Math.floor((day - SHELF_ANCHOR) / 86400000) % 4) + 4) % 4;
 }
-function shelfItems(idx) { return SHOP_ITEMS.slice(idx * 9, idx * 9 + 9); }
+function shelfGroups() {
+  const n = SHOP_ITEMS.length, base = Math.floor(n / 4), rem = n % 4;
+  const groups = [];
+  let start = 0;
+  for (let i = 0; i < 4; i++) {
+    const size = base + (i < rem ? 1 : 0);
+    groups.push(SHOP_ITEMS.slice(start, start + size));
+    start += size;
+  }
+  return groups;
+}
+function shelfItems(idx) { return shelfGroups()[((idx % 4) + 4) % 4]; }
 function rotationInfo(now) {
   const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
   const minsLeft = Math.max(0, Math.round((midnight - now) / 60000));
   return { idx: shelfDayIndex(now), minsLeft, dayFrac: 1 - minsLeft / 1440 };
 }
-/* Strength board tallies from session history. Seeded lifts (xp null) carry no
-   score and are skipped; first-time lifts (label "Logged") count separately. */
+/* Strength board tallies from session history by progression LABEL,
+   regardless of XP attribution — synced lifts carry labels but xp:null and
+   are counted, and the four seeded sessions now carry artifact-record labels
+   too. Lifts with no progression label (first-time "Logged" lifts) can't be
+   categorized and aren't counted; the board has no first-time column. */
 function boardCounts(sessions) {
-  let progress = 0, held = 0, reset = 0, first = 0;
+  let progress = 0, held = 0, reset = 0;
   (sessions || []).forEach((s) => Object.values(s.lifts || {}).forEach((l) => {
-    if (l.xp === null || l.xp === undefined) return;
     if (l.label === "Move-up") progress++;
     else if (l.label === "Held") held++;
     else if (l.label === "Reset") reset++;
-    else first++;
   }));
-  return { progress, held, reset, first };
+  return { progress, held, reset };
 }
 /* Real gym loads: dumbbells +5, skipping 7.5s and 22.5s (they don't exist at his gym);
    cables move to the next 10-lb stack setting, 40 -> 50, never 45. */
@@ -156,14 +170,18 @@ function fmtWeight(ex, weight) {
   return weight + " lbs";
 }
 function totalReps(reps) { return reps.reduce((a, b) => a + b, 0); }
-/* Lift scoring vs the previous session's same lift. */
-function scoreLift(prev, curWeight, curReps) {
+/* Lift scoring vs the previous session's same lift, aligned to the artifact
+   ledger: move-up +1, goal/milestone hit (the goal checkbox) +1, held or
+   reset +0, first-time lift +1. A goal hit pays even on a held or reset lift
+   (artifact evidence: Oct 16 legs and Oct 21 overhead press both paid a
+   milestone on non-move-up lifts). Top-of-range alone (no checkbox) rolls
+   the target and pays coins but is not a milestone for XP. */
+function scoreLift(prev, curWeight, curReps, goalHit) {
   if (!prev) return { label: "Logged", xp: 1 };
   const prevTotal = totalReps(prev.reps), curTotal = totalReps(curReps);
-  if (curWeight > prev.weight) return { label: "Move-up", xp: 2 };
-  if (curWeight === prev.weight && curTotal > prevTotal) return { label: "Move-up", xp: 2 };
-  if (curWeight === prev.weight && curTotal === prevTotal) return { label: "Held", xp: 1 };
-  return { label: "Reset", xp: 0 };
+  const movedUp = curWeight > prev.weight || (curWeight === prev.weight && curTotal > prevTotal);
+  const label = movedUp ? "Move-up" : (curWeight === prev.weight && curTotal === prevTotal ? "Held" : "Reset");
+  return { label, xp: (movedUp ? 1 : 0) + (goalHit ? 1 : 0) };
 }
 function dayTotals(day) {
   if (!day) return { cal: 0, protein: 0 };
@@ -192,10 +210,12 @@ function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toS
    PWA since, totals/coins/character/targets are left alone and only the
    missing dated records are added. The whole sync is idempotent: running
    it twice changes nothing the second time.
-   NOTE: the PWA has ONE cable-pushdown slot (surfaced on the arms page)
-   while the artifact tracks push pushdown (50) and arms pushdown2 (60)
-   separately. The synced target is 60 (latest arms weight); push-day
-   pushdown history (50) is preserved in sessions. */
+   NOTE: push-day pushdown history now lives under the distinct
+   "push-cable-pushdown" exercise (user-confirmed split 2026-10-29): the
+   Oct 14 / 21 / 28 push sessions' pushdowns (50 lbs) were re-keyed from
+   the arms-day slot, and migrateState moves them on phones that already
+   synced. Arms-day pushdown history (e.g. 60 lbs entries) stays under
+   "cable-pushdown" untouched. */
 const SYNC_LABEL = { progress: "Move-up", held: "Held", reset: "Reset" };
 function syncLift(weight, reps, status, extra) {
   return Object.assign({ weight, reps, goalHit: false, xp: null, label: SYNC_LABEL[status] }, extra || {});
@@ -222,7 +242,7 @@ const SYNC_SESSIONS = [
     "bench-press": syncLift(35, [12, 12, 12, 12], "progress"),
     "overhead-press": syncLift(20, [12, 12, 12], "reset"),
     "incline-press": syncLift(20, [15, 12, 12], "progress"),
-    "cable-pushdown": syncLift(50, [12, 12, 12], "held") } },
+    "push-cable-pushdown": syncLift(50, [12, 12, 12], "held") } },
   { date: "2026-10-22", dayId: "pull", doubled: false, strengthXp: 5, lifts: {
     "lat-pulldown": syncLift(90, [12, 12, 10, 12], "progress"),
     "single-arm-row": syncLift(45, [12, 12, 12], "progress"),
@@ -244,7 +264,7 @@ const SYNC_SESSIONS = [
     "bench-press": syncLift(40, [8, 8, 8], "progress"),
     "overhead-press": syncLift(25, [8, 8, 8], "progress"),
     "incline-press": syncLift(25, [9, 8, 8], "progress"),
-    "cable-pushdown": syncLift(50, [12, 11, 12], "reset") } },
+    "push-cable-pushdown": syncLift(50, [12, 11, 12], "reset") } },
   { date: "2026-10-29", dayId: "pull", doubled: true, strengthXp: 8, lifts: {
     "lat-pulldown": syncLift(90, [12, 12, 12, 12], "progress", { goalHit: true, note: "Milestone · target hit" }),
     "single-arm-row": syncLift(50, [10, 10, 12], "progress"),
@@ -280,12 +300,18 @@ const SYNC_FOOD_DAYS = {
   "2026-10-27": syncFoodDay(1410, 126, false, false)
 };
 Object.entries(SYNC_FOOD_DAYS).forEach(([d, day]) => { day.entries[0].id = "sync-" + d; });
-// Artifact owned items mapped to PWA catalog ids by name. Unmapped (no PWA
-// catalog match, NOT invented): dogtag-micah, figure-night, hoodie-camo-verse,
-// joggers-charcoal. Artifact tee-eph610 maps to the PWA Armor of God tee
-// (Eph 6); the PWA item cites Eph 6:11, the artifact id cites 6:10.
+// Artifact owned items mapped to PWA catalog ids by name. The four items the
+// parity build added to the catalog (Micah Dog Tags, Camo Verse Hoodie,
+// Charcoal Joggers, Night Ops Figure) are included here, so the snapshot sync
+// unions them into the owned set on existing phones (no charge — they are
+// proven artifact-owned) and the fresh-install seed owns them too. The union
+// is idempotent: a second run adds nothing. Artifact tee-eph610 maps to the
+// PWA Armor of God tee (Eph 6); the PWA item cites Eph 6:11, the artifact id
+// cites 6:10. The Camo Verse Hoodie's verse/word stays blank (pending the
+// user's call) — nothing is invented for it.
 const SYNC_OWNED = ["dogtags", "bible", "wooden-cross", "pith-helmet", "saint-jacket",
-  "field-pouch", "run-tank", "heartily-tee", "armor-tee", "faith-tee", "courage-crew"];
+  "field-pouch", "run-tank", "heartily-tee", "armor-tee", "faith-tee", "courage-crew",
+  "dogtag-micah", "hoodie-camo-verse", "joggers-charcoal", "figure-night"];
 const SYNC_EQUIPPED = { top: "run-tank", neck: "dogtags", hand: "bible" };
 const SYNC_TARGETS = { "lat-pulldown": 100, "single-arm-row": 50, "face-pull": 50,
   "hammer-curl": 25, "bench-press": 40, "overhead-press": 25, "incline-press": 25,
@@ -296,8 +322,16 @@ const SYNC_TOTALS = { xpTotal: 91, coins: 802, stack: 4, active: true, claimable
 // Two completed gain weeks = 4 weight XP (artifact total). The week of
 // 2026-10-26 is still open, so it stays unpaid here.
 const SYNC_WEIGHT_XP_WEEKS = ["2026-10-12", "2026-10-19"];
+// Artifact-record labels for the four seeded sessions (2026-10-29 follow-up).
+// Shared by the fresh-install seed and the backfill in syncArtifactSnapshot.
+const SEED_LABELS = {
+  "2026-10-08": { "lat-pulldown": "Move-up", "single-arm-row": "Move-up", "face-pull": "Held", "hammer-curl": "Held" },
+  "2026-10-09": { "goblet-squat": "Move-up", "romanian-deadlift": "Move-up", "walking-lunge": "Move-up", "calf-raise": "Held" },
+  "2026-10-13": { "cable-lateral-raise": "Move-up", "db-lateral-raise": "Move-up", "bicep-curl": "Move-up", "cable-pushdown": "Move-up", "incline-curl": "Held", "overhead-extension": "Reset" },
+  "2026-10-14": { "bench-press": "Move-up", "overhead-press": "Move-up", "incline-press": "Move-up", "push-cable-pushdown": "Move-up" }
+};
 function syncArtifactSnapshot(state) {
-  const info = { guardPassed: false, addedSessions: [], addedWeights: [], addedFoodDays: [], addedOwned: [], skippedDates: [] };
+  const info = { guardPassed: false, addedSessions: [], addedWeights: [], addedFoodDays: [], addedOwned: [], skippedDates: [], relabeledSeeded: [] };
   if (!state || !state.targets || !Array.isArray(state.sessions)) return info;
   const guard = state.xpTotal === 83 && state.coins === 1160 &&
     !state.sessions.some((s) => s.date > "2026-10-14");
@@ -320,6 +354,20 @@ function syncArtifactSnapshot(state) {
   if (!Array.isArray(state.owned)) state.owned = [];
   SYNC_OWNED.forEach((id) => {
     if (!state.owned.includes(id)) { state.owned.push(id); info.addedOwned.push(id); }
+  });
+  // Seeded-session label backfill (artifact record, 2026-10-29 follow-up):
+  // the four seeded sessions shipped with label "Seeded", so the board
+  // skipped them. Relabel any phone whose seeded lifts still say "Seeded".
+  // Label-only: xp stays null, totals never move. Idempotent — a second run
+  // finds no "Seeded" labels and changes nothing. Re-saved lifts (real
+  // labels) are never touched. Not under guard: labels don't affect totals.
+  Object.entries(SEED_LABELS).forEach(([date, labels]) => {
+    const sess = findSession(state, date);
+    if (!sess || !sess.lifts) return;
+    Object.entries(labels).forEach(([exId, label]) => {
+      const l = sess.lifts[exId];
+      if (l && l.label === "Seeded") { l.label = label; info.relabeledSeeded.push(date + ":" + exId); }
+    });
   });
   if (guard) {
     state.xpTotal = SYNC_TOTALS.xpTotal;
@@ -351,6 +399,15 @@ function seedState() {
     owned: SYNC_OWNED.slice(),
     equipped: Object.assign({}, EMPTY_EQUIPPED, SYNC_EQUIPPED),
     facialHair: "clean",
+    figureVariant: "standard",
+    prestige: 0,
+    achievements: [],
+    questEvents: [],
+    questNotified: {},
+    collapsed: {},
+    purchaseCount: 0,
+    crateCount: 0,
+    scrapCount: 0,
     pendingDuplicate: null,
     weights: [
       { date: "2026-09-22", weight: 140 },
@@ -361,27 +418,27 @@ function seedState() {
     targets,
     sessions: [
       { date: "2026-10-08", dayId: "pull", doubled: null, lifts: {
-        "lat-pulldown": lift(80, [15, 8, 8, 8], { note: "First set at 70 lbs" }),
-        "single-arm-row": lift(40, [10, 10, 12]),
-        "face-pull": lift(40, [12, 12, 12]),
-        "hammer-curl": lift(15, [15, 12, 13]) } },
+        "lat-pulldown": lift(80, [15, 8, 8, 8], { note: "First set at 70 lbs", label: "Move-up" }),
+        "single-arm-row": lift(40, [10, 10, 12], { label: "Move-up" }),
+        "face-pull": lift(40, [12, 12, 12], { label: "Held" }),
+        "hammer-curl": lift(15, [15, 12, 13], { label: "Held" }) } },
       { date: "2026-10-09", dayId: "legs", doubled: null, lifts: {
-        "goblet-squat": lift(35, [12, 12, 12, 12]),
-        "romanian-deadlift": lift(20, [15, 15, 15]),
-        "walking-lunge": lift(15, [12, 12]),
-        "calf-raise": lift(10, [20, 20]) } },
+        "goblet-squat": lift(35, [12, 12, 12, 12], { label: "Move-up" }),
+        "romanian-deadlift": lift(20, [15, 15, 15], { label: "Move-up" }),
+        "walking-lunge": lift(15, [12, 12], { label: "Move-up" }),
+        "calf-raise": lift(10, [20, 20], { label: "Held" }) } },
       { date: "2026-10-13", dayId: "arms", doubled: null, lifts: {
-        "cable-lateral-raise": lift(20, [12, 12, 12, 12]),
-        "db-lateral-raise": lift(10, [10, 10, 10]),
-        "bicep-curl": lift(25, [12, 10, 10]),
-        "cable-pushdown": lift(50, [15, 15, 10]),
-        "incline-curl": lift(15, [15, 15]),
-        "overhead-extension": lift(40, [12, 12]) } },
+        "cable-lateral-raise": lift(20, [12, 12, 12, 12], { label: "Move-up" }),
+        "db-lateral-raise": lift(10, [10, 10, 10], { label: "Move-up" }),
+        "bicep-curl": lift(25, [12, 10, 10], { label: "Move-up" }),
+        "cable-pushdown": lift(50, [15, 15, 10], { label: "Move-up" }),
+        "incline-curl": lift(15, [15, 15], { label: "Held" }),
+        "overhead-extension": lift(40, [12, 12], { label: "Reset" }) } },
       { date: "2026-10-14", dayId: "push", doubled: null, lifts: {
-        "bench-press": lift(35, [12, 10, 10, 10]),
-        "overhead-press": lift(20, [15, 12, 10]),
-        "incline-press": lift(20, [12, 11, 15]),
-        "cable-pushdown": lift(50, [12, 12, 12]) } },
+        "bench-press": lift(35, [12, 10, 10, 10], { label: "Move-up" }),
+        "overhead-press": lift(20, [15, 12, 10], { label: "Move-up" }),
+        "incline-press": lift(20, [12, 11, 15], { label: "Move-up" }),
+        "push-cable-pushdown": lift(50, [12, 12, 12], { label: "Move-up" }) } },
       ...JSON.parse(JSON.stringify(SYNC_SESSIONS))
     ],
     // Training week 12 (all four days) is recorded as completed without lift numbers.
@@ -406,8 +463,19 @@ function prevLift(state, exId, beforeDate) {
 }
 function addXp(state, n) {
   const before = levelForXp(state.xpTotal);
-  state.xpTotal += n;
+  // XP caps at 200 until a prestige is claimed; excess is discarded.
+  state.xpTotal = Math.min(XP_CAP, state.xpTotal + n);
   return { leveledUp: levelForXp(state.xpTotal) > before, newLevel: levelForXp(state.xpTotal) };
+}
+/* Prestige: at 200 XP the cycle banks one prestige and restarts at 0 XP /
+   Level 1. ONLY the XP/level cycle resets — War Coins, owned items,
+   equipped/character, history, weights, and banked/active double-XP charges
+   all carry over, as do weeks that already paid weight XP. */
+function prestigeToState(state) {
+  if (!state || state.xpTotal < XP_CAP) return false;
+  state.prestige = (state.prestige || 0) + 1;
+  state.xpTotal = 0;
+  return true;
 }
 /* Save one lift. Merges into the day's session; never wipes other lifts.
    A session captures its doubled flag when created: a session started before
@@ -426,12 +494,18 @@ function saveLiftToState(state, dateStr, dayId, exId, weight, reps, goalHit) {
   const prevForScore = state.sessions
     .filter((s) => s.date < dateStr && s.lifts[exId])
     .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const scored = scoreLift(prevForScore ? prevForScore.lifts[exId] : null, weight, reps);
+  const scored = scoreLift(prevForScore ? prevForScore.lifts[exId] : null, weight, reps, goalHit);
   const doubled = session.doubled === true;
   const earned = scored.xp * (doubled ? 2 : 1);
+  // Re-saving a lift replaces it: subtract the old lift's XP first so a
+  // re-save never double-counts (delete-then-save semantics). Coins are
+  // permanent ledger entries and are not subtracted, matching deletes.
+  const oldLift = session.lifts[exId] || null;
+  const oldXp = oldLift && typeof oldLift.xp === "number" ? oldLift.xp : 0;
+  if (oldXp) state.xpTotal -= oldXp;
   session.lifts[exId] = { weight, reps, goalHit, xp: earned, label: scored.label };
   const xpInfo = addXp(state, earned);
-  // War Coins: new session +10, +1 per set, +1 per 5 reps, +20 on a move-up.
+  // War Coins: new session +25, +1 per set, +1 per 5 reps, +15 on a move-up.
   let coinsEarned = (sessionWasNew ? WC_SESSION : 0) + reps.length * WC_PER_SET + Math.floor(totalReps(reps) / 5) * WC_PER_5_REPS;
   if (scored.label === "Move-up") coinsEarned += WC_MOVEUP;
   state.coins += coinsEarned;
@@ -449,7 +523,7 @@ function saveLiftToState(state, dateStr, dayId, exId, weight, reps, goalHit) {
       coinsEarned += WC_ROLLUP;
     }
   }
-  return { scored, earned, doubled, rolled, sessionWasNew, leveledUp: xpInfo.leveledUp, newLevel: xpInfo.newLevel, coinsEarned };
+  return { scored, earned, xpDelta: earned - oldXp, replaced: !!oldLift, doubled, rolled, sessionWasNew, leveledUp: xpInfo.leveledUp, newLevel: xpInfo.newLevel, coinsEarned };
 }
 function deleteLiftFromState(state, dateStr, exId) {
   const session = findSession(state, dateStr);
@@ -488,13 +562,24 @@ function addFoodToState(state, name, cal, protein, dateStr, timeStr) {
   state.coins += coinsEarned;
   return { totals, leveledUp, newLevel, coinsEarned };
 }
+/* Food delete matches the artifact: removing an entry recalculates the
+   day's protein/calorie bonus flags and claws back the bonus XP they paid
+   (+1 per lost bonus). War Coins are NOT clawed back — they are permanent
+   ledger entries that may already be spent, matching lift/session deletes.
+   Only today's entries are removable in the UI; closed days stay final. */
 function removeFoodFromState(state, dateStr, entryId) {
   const day = state.foodDays[dateStr];
-  if (!day) return false;
+  if (!day) return { removed: false, xpLost: 0, lostProtein: false, lostCal: false };
   const before = day.entries.length;
   day.entries = day.entries.filter((e) => e.id !== entryId);
+  if (day.entries.length === before) return { removed: false, xpLost: 0, lostProtein: false, lostCal: false };
+  const totals = dayTotals(day);
+  let xpLost = 0, lostProtein = false, lostCal = false;
+  if (day.bonus.protein && totals.protein < PROTEIN_TARGET) { day.bonus.protein = false; xpLost += 1; lostProtein = true; }
+  if (day.bonus.cal && totals.cal < CAL_TARGET) { day.bonus.cal = false; xpLost += 1; lostCal = true; }
+  if (xpLost) state.xpTotal = Math.max(0, state.xpTotal - xpLost);
   if (day.entries.length === 0) delete state.foodDays[dateStr];
-  return day.entries.length !== before;
+  return { removed: true, xpLost, lostProtein, lostCal };
 }
 /* Bodyweight: +2 XP per week of average gain, once per week. */
 function addWeightToState(state, dateStr, weight) {
@@ -532,11 +617,116 @@ function activateDoubleToState(state) {
   return true;
 }
 
+/* ---------------- Achievements (lifetime badges) + Quests (weekly goals) ----------------
+   DRAFT lists for the user's approval (he doesn't remember the old app's).
+   Recognition only: NO XP or War Coin rewards are attached in this draft.
+   Achievements evaluate from state, so synced history counts for session /
+   move-up / target / food / weigh-in badges; shop-action badges (purchase,
+   crate, scrap) need real PWA actions, since the PWA has no record of the
+   artifact's shop history. Quests measure the CURRENT week (Monday-anchored)
+   and refresh automatically when the week rolls over. */
+const ACHIEVEMENTS = [
+  { id: "first-session", name: "First Session", desc: "Log your first workout session." },
+  { id: "first-moveup", name: "Moving Up", desc: "Log your first move-up lift." },
+  { id: "first-target", name: "Target Hit", desc: "Hit a goal on a lift for the first time." },
+  { id: "sessions-10", name: "10 Sessions", desc: "Log 10 workout sessions." },
+  { id: "sessions-25", name: "25 Sessions", desc: "Log 25 workout sessions." },
+  { id: "sessions-50", name: "50 Sessions", desc: "Log 50 workout sessions." },
+  { id: "first-purchase", name: "First Purchase", desc: "Buy your first shop item." },
+  { id: "first-crate", name: "First Drop", desc: "Open your first supply crate." },
+  { id: "first-scrap", name: "Scrap Dealer", desc: "Scrap your first duplicate reward." },
+  { id: "protein-streak-3", name: "Protein Streak ×3", desc: "Hit the protein target 3 days in a row." },
+  { id: "calorie-day", name: "Fuelled Up", desc: "Hit the 3,200-calorie target on a day." },
+  { id: "first-weighin", name: "On the Scale", desc: "Log your first weigh-in." },
+  { id: "weekly-gain", name: "Gaining", desc: "Finish a week with a higher average weigh-in." },
+  { id: "first-prestige", name: "First Prestige", desc: "Prestige for the first time." }
+];
+function achievementEarned(state, id) {
+  const sessions = state.sessions || [];
+  const hasLift = (pred) => sessions.some((s) => Object.values(s.lifts || {}).some(pred));
+  switch (id) {
+    case "first-session": return sessions.length > 0;
+    case "first-moveup": return hasLift((l) => l.label === "Move-up");
+    case "first-target": return hasLift((l) => l.goalHit === true);
+    case "sessions-10": return sessions.length >= 10;
+    case "sessions-25": return sessions.length >= 25;
+    case "sessions-50": return sessions.length >= 50;
+    case "first-purchase": return (state.purchaseCount || 0) > 0;
+    case "first-crate": return (state.crateCount || 0) > 0;
+    case "first-scrap": return (state.scrapCount || 0) > 0;
+    case "protein-streak-3": {
+      const days = Object.keys(state.foodDays || {}).filter((d) => state.foodDays[d].bonus && state.foodDays[d].bonus.protein).sort();
+      for (let i = 0; i + 2 < days.length; i++) {
+        if (parseDate(days[i + 1]) - parseDate(days[i]) === 86400000 && parseDate(days[i + 2]) - parseDate(days[i + 1]) === 86400000) return true;
+      }
+      return false;
+    }
+    case "calorie-day": return Object.values(state.foodDays || {}).some((d) => d.bonus && d.bonus.cal);
+    case "first-weighin": return (state.weights || []).length > 0;
+    case "weekly-gain": return (state.weightXpWeeks || []).length > 0;
+    case "first-prestige": return (state.prestige || 0) > 0;
+  }
+  return false;
+}
+/* Awards every newly-earned achievement; returns the fresh ones (for banners). */
+function awardAchievements(state) {
+  if (!Array.isArray(state.achievements)) state.achievements = [];
+  const fresh = [];
+  ACHIEVEMENTS.forEach((a) => {
+    if (!state.achievements.includes(a.id) && achievementEarned(state, a.id)) {
+      state.achievements.push(a.id);
+      fresh.push(a);
+    }
+  });
+  return fresh;
+}
+const QUESTS = [
+  { id: "week-4-days", name: "Full Week", desc: "Log all 4 training days in a week.", target: 4 },
+  { id: "week-protein-5", name: "Protein Week", desc: "Hit the protein target on 5 days in a week.", target: 5 },
+  { id: "week-weighins-3", name: "Check In", desc: "Log 3 weigh-ins in a week.", target: 3 },
+  { id: "week-crate", name: "Supply Run", desc: "Open a supply crate this week.", target: 1 },
+  { id: "week-equip", name: "Fresh Kit", desc: "Equip a new item this week.", target: 1 },
+  { id: "week-moveups-5", name: "Moving Week", desc: "Log 5 move-up lifts in a week.", target: 5 }
+];
+function questProgress(state, quest, weekKey) {
+  const wk = weekKey || weekKeyOf(dateKey(new Date()));
+  let current = 0;
+  if (quest.id === "week-4-days") {
+    current = new Set((state.sessions || []).filter((s) => weekKeyOf(s.date) === wk).map((s) => s.dayId)).size;
+  } else if (quest.id === "week-protein-5") {
+    current = Object.entries(state.foodDays || {}).filter(([d, day]) => weekKeyOf(d) === wk && day.bonus && day.bonus.protein).length;
+  } else if (quest.id === "week-weighins-3") {
+    current = (state.weights || []).filter((w) => weekKeyOf(w.date) === wk).length;
+  } else if (quest.id === "week-crate") {
+    current = (state.questEvents || []).filter((e) => e.type === "crate" && e.week === wk).length;
+  } else if (quest.id === "week-equip") {
+    current = (state.questEvents || []).filter((e) => e.type === "equip" && e.week === wk).length;
+  } else if (quest.id === "week-moveups-5") {
+    (state.sessions || []).filter((s) => weekKeyOf(s.date) === wk).forEach((s) => {
+      Object.values(s.lifts || {}).forEach((l) => { if (l.label === "Move-up") current++; });
+    });
+  }
+  return { current: Math.min(current, quest.target), target: quest.target, done: current >= quest.target };
+}
+/* Returns quests newly completed this week (bannered once per week each). */
+function checkQuests(state) {
+  if (!state.questNotified || typeof state.questNotified !== "object") state.questNotified = {};
+  const wk = weekKeyOf(dateKey(new Date()));
+  const fresh = [];
+  QUESTS.forEach((q) => {
+    if (questProgress(state, q, wk).done && state.questNotified[q.id] !== wk) {
+      state.questNotified[q.id] = wk;
+      fresh.push(q);
+    }
+  });
+  return fresh;
+}
+
 /* ---------------- Stage 2: shop catalog, War Coins, crates, character ---------------- */
 /* War Coins economy. Awards are permanent ledger entries: deleting a lift or
    session recalculates XP but never claws coins back (they may already be spent). */
 const WC_MULT_END = "2026-11-10"; // 1.5x on weigh-ins, weekly gains, fuel days through this date
-const WC_SESSION = 10, WC_PER_SET = 1, WC_PER_5_REPS = 1, WC_MOVEUP = 20, WC_ROLLUP = 30;
+const WC_SESSION = 25, WC_PER_SET = 1, WC_PER_5_REPS = 1, WC_MOVEUP = 15, WC_ROLLUP = 10;
 const WC_PROTEIN_DAY = 20, WC_CAL_DAY = 20, WC_WEIGHIN = 15, WC_WEEKLY_GAIN = 30;
 function wcMult(dateStr) { return dateStr <= WC_MULT_END ? 1.5 : 1; }
 function wcBoosted(n, dateStr) { return Math.round(n * wcMult(dateStr)); }
@@ -585,10 +775,31 @@ const SHOP_ITEMS = [
   { id: "bandolier", name: "Bandolier", slot: "chest", price: 120, glyph: "bandolier", desc: "Canvas bandolier worn diagonally across the chest." },
   { id: "wooden-cross", name: "Carved Wooden Cross", slot: "hand", price: 100, glyph: "cross", held: "cross", desc: "Hand-carved wooden cross, carried in the fist." },
   { id: "bible", name: "Field Bible", slot: "hand", price: 100, glyph: "bible", held: "bible", desc: "Pocket field Bible with a gilt cross on the cover." },
-  { id: "dumbbells", name: "Iron Dumbbell Pair", slot: "hand", price: 150, glyph: "dumbbells", held: "dumbbells", desc: "A pair of iron dumbbells, one gripped in each fist." }
+  { id: "dumbbells", name: "Iron Dumbbell Pair", slot: "hand", price: 150, glyph: "dumbbells", held: "dumbbells", desc: "A pair of iron dumbbells, one gripped in each fist." },
+  // ---- Artifact-owned additions (no PWA equivalent existed) ----
+  { id: "dogtag-micah", name: "Micah Dog Tags", slot: "neck", price: 100, glyph: "dogtags", desc: "Second dog-tags item — Micah edition, on a long chain, hanging low so it never covers a chest print." },
+  { id: "hoodie-camo-verse", name: "Camo Verse Hoodie", slot: "top", price: 220, cut: "hoodie", camo: "woodland", main: "#5a6136", dark: "#3d4426", accent: "#e8ddc0", word: null, wordStyle: "bold", verseRef: null, verse: null, meaning: null, desc: "Woodland camo pullover hoodie with a roomy boxy cut and a kangaroo pocket." },
+  { id: "joggers-charcoal", name: "Charcoal Joggers", slot: "bottom", price: 150, camo: null, main: "#3a3a3a", dark: "#222222", accent: "#000000", desc: "Charcoal joggers with a tapered leg and cuffed hem." },
+  // ---- Figure variants ----
+  { id: "figure-night", name: "Night Ops Figure", slot: "figure", price: 250, glyph: "figure-night", desc: "Night Ops figure variant — blacked-out kit for night sessions. Same bulk, same lifts." }
 ];
+/* Era badges: '90s gym bro vs 2026 gym bro, inferred from cut and style.
+   Unlisted items default to "both" (timeless gear, or ambiguous — see the
+   build notes: camo hoodie, figure variant, vintage head/eyewear). */
+const ITEM_ERA = {
+  "saint-jacket": "2026", "shepherd-anorak": "2026", "bestill-tee": "2026", "armor-tee": "2026",
+  "eagles-tee": "2026", "courage-crew": "2026", "heartily-tee": "2026", "endure-hoodie": "2026",
+  "purpose-pullover": "2026", "nightops-tank": "2026", "joggers-charcoal": "2026",
+  "faith-tee": "90s", "fearnot-tee": "90s", "strength-cover": "90s", "run-tank": "90s",
+  "shield-stringer": "90s", "woodland-cargos": "90s", "duck-cargos": "90s", "olive-cargos": "90s",
+  "black-cargos": "90s", "desert-cargos": "90s", "beanie": "90s", "bandolier": "90s",
+  "tall-boots": "90s", "aviator-cap": "90s"
+};
+SHOP_ITEMS.forEach((it) => { it.era = ITEM_ERA[it.id] || "both"; });
+function eraBadge(it) { return it.era === "90s" ? "’90s" : it.era === "2026" ? "2026" : ""; }
+function eraMatches(it, era) { return era === "all" || it.era === era || it.era === "both"; }
 const ITEM_BY_ID = Object.fromEntries(SHOP_ITEMS.map((i) => [i.id, i]));
-const EMPTY_EQUIPPED = { top: null, bottom: null, head: null, eyes: null, neck: null, waist: null, chest: null, shoulder: null, hip: null, socks: null, feet: null, hand: null };
+const EMPTY_EQUIPPED = { top: null, bottom: null, head: null, eyes: null, neck: null, waist: null, chest: null, shoulder: null, hip: null, socks: null, feet: null, hand: null, figure: null };
 function slotFilter(slot) {
   if (slot === "top") return "top";
   if (slot === "bottom") return "bottom";
@@ -632,6 +843,30 @@ function migrateState(state) {
     if (!state.facialHair) state.facialHair = "beard";
     state.version = 2;
   }
+  // Always: fill targets for exercises added after the state was created
+  // (e.g. the push-day pushdown split) and default the figure variant.
+  // This never touches sessions, totals, coins, or the sync records.
+  EXERCISES.forEach((e) => { if (!state.targets[e.id]) state.targets[e.id] = { weight: e.weight, sets: e.sets, repMin: e.repMin, repMax: e.repMax }; });
+  if (!state.figureVariant) state.figureVariant = (state.equipped && state.equipped.figure) || "standard";
+  if (state.prestige === undefined) state.prestige = 0;
+  if (!Array.isArray(state.achievements)) state.achievements = [];
+  if (!Array.isArray(state.questEvents)) state.questEvents = [];
+  if (!state.questNotified || typeof state.questNotified !== "object") state.questNotified = {};
+  if (!state.collapsed || typeof state.collapsed !== "object") state.collapsed = {};
+  if (state.purchaseCount === undefined) state.purchaseCount = 0;
+  if (state.crateCount === undefined) state.crateCount = 0;
+  if (state.scrapCount === undefined) state.scrapCount = 0;
+  // Push-pushdown split (user-confirmed 2026-10-29): move push-day sessions'
+  // pushdown entries from the arms-day slot to the distinct push-day slot,
+  // so phones that already synced get the same history as fresh installs.
+  // Arms-day sessions are never touched, and nothing is overwritten: the
+  // move only happens when the push slot is empty on that session.
+  (state.sessions || []).forEach((s) => {
+    if (s.dayId === "push" && s.lifts && s.lifts["cable-pushdown"] && !s.lifts["push-cable-pushdown"]) {
+      s.lifts["push-cable-pushdown"] = s.lifts["cable-pushdown"];
+      delete s.lifts["cable-pushdown"];
+    }
+  });
   return state;
 }
 
@@ -653,18 +888,25 @@ function wordFont(style) {
    + mouth line) is ALWAYS drawn; beard/stubble wrap around it, never over it.
    Hand-held items sit in one solid fist with curled fingers as arcs — the
    fist grips the item's lower part and never overlaps the item's top. */
-function buildCharacterSvg(equipped, facialHair, weight) {
+function buildCharacterSvg(equipped, facialHair, weight, variant) {
   const eq = equipped || {};
+  const night = variant === "night";
   const top = eq.top ? ITEM_BY_ID[eq.top] : null;
   const bottom = eq.bottom ? ITEM_BY_ID[eq.bottom] : null;
   const head = eq.head ? ITEM_BY_ID[eq.head] : null;
   const eyes = eq.eyes ? ITEM_BY_ID[eq.eyes] : null;
   const hand = eq.hand ? ITEM_BY_ID[eq.hand] : null;
-  const bulk = 1 + Math.min(0.08, Math.max(0, (weight - 140)) * 0.004);
-  const SKIN = "#e8b98a", OUT = "#1a1a1a", SHIRT = "#6b6f3f", SHORTS = "#7d7f57";
+  // Mass scales VISIBLY with weigh-ins: broader as weight rises above the
+  // 140 lb start, leaner as it falls. 152.6 lbs renders at 1.10×, 165 at 1.16×.
+  const bulk = 1 + Math.min(0.16, Math.max(-0.06, (weight - 140) * 0.008));
+  const SKIN = "url(#figSkin)", OUT = "#1a1a1a", SHIRT = night ? "#23241f" : "#6b6f3f", SHORTS = night ? "#2c2f1c" : "#7d7f57";
   const topMain = top ? top.main : SHIRT, topDark = top ? top.dark : "#4a4d2a";
   let s = `<svg viewBox="0 0 320 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Character figure" style="width:100%;max-width:320px;display:block;margin:0 auto">`;
+  // Cel-shading gradients (skin + base shirt) + torso clip for highlights.
+  s += `<defs><linearGradient id="figSkin" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f2cda4"/><stop offset="55%" stop-color="#e8b98a"/><stop offset="100%" stop-color="#cf9a66"/></linearGradient><linearGradient id="figShirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7d8149"/><stop offset="100%" stop-color="#5c6040"/></linearGradient></defs>`;
   s += `<ellipse cx="160" cy="424" rx="95" ry="10" fill="#000" opacity="0.35"/>`;
+  // Legs + boots scale with bulk too (same center-out transform as the torso).
+  s += `<g transform="translate(160,0) scale(${bulk.toFixed(3)},1) translate(-160,0)">`;
   // ---- Legs / bottoms ----
   if (bottom && bottom.camo) {
     const blobs = CAMO_BLOBS[bottom.camo];
@@ -689,6 +931,12 @@ function buildCharacterSvg(equipped, facialHair, weight) {
     s += `<rect x="126" y="222" width="68" height="8" fill="#5c5e3d" stroke="${OUT}" stroke-width="2"/>`;
     s += `<rect x="132" y="262" width="20" height="100" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
     s += `<rect x="168" y="262" width="20" height="100" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+    // Calf bulges on bare legs.
+    s += `<ellipse cx="142" cy="318" rx="13" ry="22" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="178" cy="318" rx="13" ry="22" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+    // Fatigue-short side pockets.
+    s += `<rect x="126" y="230" width="12" height="18" fill="#5c5e3d" stroke="${OUT}" stroke-width="1.5"/>`;
+    s += `<rect x="182" y="230" width="12" height="18" fill="#5c5e3d" stroke="${OUT}" stroke-width="1.5"/>`;
   }
   if (bottom) {
     // Cargo legs end at the pooled hem; skin shows only below it when boots are ankle-height.
@@ -709,17 +957,28 @@ function buildCharacterSvg(equipped, facialHair, weight) {
     s += `<rect x="164" y="360" width="28" height="38" fill="#3a2a1a" stroke="${OUT}" stroke-width="3"/><rect x="160" y="394" width="36" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/>`;
   }
   // ---- Torso + arms (bulk-scaled) ----
+  s += `</g>`; // close the legs bulk group
   s += `<g transform="translate(160,0) scale(${bulk.toFixed(3)},1) translate(-160,0)">`;
   const sleeve = top ? topMain : SHIRT;
   if (!top || top.cut !== "tank") {
     const sleeveLen = top && (top.cut === "jacket" || top.cut === "anorak") ? 205 : 160;
     s += `<rect x="104" y="122" width="26" height="${sleeveLen - 122}" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
     s += `<rect x="190" y="122" width="26" height="${sleeveLen - 122}" fill="${sleeve}" stroke="${OUT}" stroke-width="3"/>`;
+    // Deltoid caps over the sleeve tops.
+    s += `<ellipse cx="117" cy="128" rx="14" ry="11" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="203" cy="128" rx="14" ry="11" fill="${sleeve}" stroke="${OUT}" stroke-width="2.5"/>`;
   }
   s += `<rect x="108" y="190" width="18" height="70" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
   s += `<rect x="194" y="190" width="18" height="70" fill="${SKIN}" stroke="${OUT}" stroke-width="3"/>`;
+  // Bicep bulges on the upper arms.
+  s += `<ellipse cx="117" cy="202" rx="12" ry="17" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
+  s += `<ellipse cx="203" cy="202" rx="12" ry="17" fill="${SKIN}" stroke="${OUT}" stroke-width="2.5"/>`;
   const torsoW = top && (top.cut === "jacket" || top.cut === "anorak" || top.cut === "hoodie") ? [104, 216] : [112, 208];
   s += `<path d="M${torsoW[0]},118 L${torsoW[1]},118 L198,228 L122,228 Z" fill="${topMain}" stroke="${OUT}" stroke-width="3"/>`;
+  // Cel-shading: highlight left, shade right, clipped to the torso; plus pec arcs.
+  s += `<defs><clipPath id="figTorso"><path d="M${torsoW[0]},118 L${torsoW[1]},118 L198,228 L122,228 Z"/></clipPath></defs>`;
+  s += `<g clip-path="url(#figTorso)"><ellipse cx="${torsoW[0] + 16}" cy="172" rx="15" ry="55" fill="#fff" opacity="0.13"/><ellipse cx="${torsoW[1] - 12}" cy="176" rx="13" ry="55" fill="#000" opacity="0.11"/></g>`;
+  s += `<path d="M128,152 Q144,164 160,154 Q176,164 192,152" fill="none" stroke="${OUT}" stroke-width="2" opacity="0.45"/>`;
   if (top && (top.cut === "hoodie" || top.cut === "anorak")) {
     s += `<path d="M132,118 Q160,96 188,118 Q160,108 132,118 Z" fill="${topDark}" stroke="${OUT}" stroke-width="3"/>`;
   }
@@ -748,8 +1007,9 @@ function buildCharacterSvg(equipped, facialHair, weight) {
     for (let x = 112; x < 208; x += 12) s += `<rect x="${x}" y="160" width="6" height="20" fill="#c8a84a" stroke="${OUT}" stroke-width="1.5"/>`;
     s += `</g>`;
   }
-  // Dog tags (neck slot)
-  if (eq.neck === "dogtags") {
+  // Dog tags (neck slot) — any neck item renders the dog-tags graphic,
+  // since the neck slot only holds dog-tags variants.
+  if (eq.neck) {
     s += `<path d="M140,112 Q160,152 180,112" fill="none" stroke="#888" stroke-width="1.5"/>`;
     s += `<g transform="rotate(-8 152 150)"><rect x="144" y="144" width="16" height="22" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/></g>`;
     s += `<g transform="rotate(10 170 158)"><rect x="162" y="152" width="16" height="22" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/></g>`;
@@ -780,6 +1040,11 @@ function buildCharacterSvg(equipped, facialHair, weight) {
   } else if (facialHair === "stubble") {
     s += `<path d="M128,96 Q130,118 148,124 Q160,127 172,124 Q190,118 192,96 Q188,112 172,116 Q160,119 148,116 Q132,112 128,96 Z" fill="#000" opacity="0.14"/>`;
     s += `<path d="M142,88 Q160,82 178,88 Q170,93 160,92 Q150,93 142,88 Z" fill="#2a2018" stroke="${OUT}" stroke-width="1.5"/>`;
+  } else if (facialHair === "moustache") {
+    // Big handlebar moustache in the reference style, above the mouth —
+    // the mouth itself is drawn after, so it always stays visible.
+    s += `<path d="M134,88 Q146,77 160,82 Q174,77 186,88 Q182,96 170,93 Q160,91 150,93 Q138,96 134,88 Z" fill="#2a2018" stroke="${OUT}" stroke-width="2"/>`;
+    s += `<path d="M136,90 Q132,96 138,98 M184,90 Q188,96 182,98" fill="none" stroke="${OUT}" stroke-width="2"/>`;
   }
   // Eyes, brows, nose — always drawn.
   s += `<ellipse cx="148" cy="68" rx="7" ry="8" fill="#fff" stroke="${OUT}" stroke-width="1.5"/><circle cx="148" cy="69" r="3.5" fill="#1a1a1a"/>`;
@@ -866,22 +1131,25 @@ function previewSvg(item) {
     bandolier: `<g transform="rotate(38 60 60)"><rect x="16" y="52" width="88" height="14" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>${[22, 34, 46, 58, 70, 82, 94].map((x) => `<rect x="${x}" y="50" width="5" height="18" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`).join("")}</g>`,
     cross: `<rect x="55" y="18" width="10" height="84" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="38" y="42" width="44" height="10" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/>`,
     bible: `<rect x="40" y="28" width="40" height="64" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="47" y1="32" x2="47" y2="88" stroke="#c8a84a" stroke-width="1.5"/><path d="M60,44 v20 M52,52 h16" stroke="#c8a84a" stroke-width="2.5"/>`,
-    dumbbells: `<rect x="14" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="8" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="54" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="58" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="98" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="52" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/>`
+    dumbbells: `<rect x="14" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="8" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="54" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="58" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="98" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="52" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/>`,
+    "figure-night": `<circle cx="60" cy="32" r="14" fill="#e8b98a" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="48" width="32" height="46" fill="#23241f" stroke="${OUT}" stroke-width="2.5"/><rect x="48" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><rect x="62" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/>`
   }[item.glyph] || `<circle cx="60" cy="60" r="20" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/>`;
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${g}</svg>`;
 }
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { DAYS, EXERCISES, EX_BY_ID, CABLE_STACK, RANKS, dateKey, parseDate, fmtDate,
-    weekFor, levelForXp, rankForLevel, rankInsigniaSvg, shelfDayIndex, shelfItems,
+    weekFor, levelForXp, rankForLevel, rankInsigniaSvg, shelfDayIndex, shelfItems, shelfGroups,
     rotationInfo, boardCounts, nextLoad, fmtWeight, totalReps, scoreLift, dayTotals,
     weekKeyOf, seedState, findSession, prevLift, saveLiftToState, deleteLiftFromState,
     deleteSessionFromState, addFoodToState, removeFoodFromState, addWeightToState,
-    claimDoubleToState, activateDoubleToState,
+    claimDoubleToState, activateDoubleToState, addXp,
     SHOP_ITEMS, ITEM_BY_ID, EMPTY_EQUIPPED, CRATES, CRATE_BY_ID, scrapValue,
     resolveCrateReward, wcMult, wcBoosted, WC_MULT_END, migrateState,
-    syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS,
-    buildCharacterSvg, previewSvg, slotFilter };
+    syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS, SEED_LABELS,
+    buildCharacterSvg, previewSvg, slotFilter, eraBadge, eraMatches,
+    prestigeToState, ACHIEVEMENTS, QUESTS, achievementEarned, awardAchievements,
+    questProgress, checkQuests };
 }
 
 /* ---------------- Browser layer (DOM, storage, sounds, events) ---------------- */
@@ -899,6 +1167,13 @@ if (typeof document !== "undefined") {
 
   let currentDay = DAY_BY_WEEKDAY[new Date().getDay()] || "arms";
   let logDay = currentDay;
+  // Log-form prefill from history tools (copy-to-today / load-back). Nothing
+  // is written to state until the user hits Save on a lift; a prefill entry
+  // is cleared when its lift is saved. Copy-to-today fills only lifts not
+  // yet logged today; load-back overrides the form (override: true) for
+  // editing — re-saving subtracts the old lift's XP first, so it can't
+  // double-count (see saveLiftToState).
+  let logPrefill = {};
   let lastRenderedDay = dateKey(new Date());
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -939,6 +1214,35 @@ if (typeof document !== "undefined") {
       showBanner(extraHtml);
     }
   }
+  /* Award + quest notifications (recognition only — no XP or WC attached). */
+  function notifyAwards() {
+    const freshA = awardAchievements(state);
+    const freshQ = checkQuests(state);
+    if (freshA.length || freshQ.length) {
+      persist();
+      const bits = [];
+      freshA.forEach((a) => bits.push("🏆 Achievement: <b>" + esc(a.name) + "</b> — " + esc(a.desc)));
+      freshQ.forEach((q) => bits.push("✅ Quest complete: <b>" + esc(q.name) + "</b>"));
+      showBanner(bits.join("<br>"));
+    }
+  }
+  /* Progress-card collapse: tap a card header to collapse/expand; the
+     open/closed state persists in localStorage; default is expanded. */
+  function applyCollapse() {
+    document.querySelectorAll("#tab-progress .card.collapsible").forEach((card) => {
+      const collapsed = !!(state.collapsed && state.collapsed[card.id]);
+      card.classList.toggle("collapsed", collapsed);
+    });
+  }
+  $("tab-progress").addEventListener("click", (e) => {
+    const head = e.target.closest("[data-collapse]");
+    if (!head) return;
+    const id = head.dataset.collapse;
+    if (!state.collapsed) state.collapsed = {};
+    state.collapsed[id] = !state.collapsed[id];
+    persist();
+    applyCollapse();
+  });
 
   /* ----- Header / tabs: two rows on phones (week/coins/sound up top, the
      centered rank/XP module with a short CLAIM 2x button below) ----- */
@@ -948,7 +1252,8 @@ if (typeof document !== "undefined") {
     $("coinsChip").textContent = "🪙 " + state.coins.toLocaleString();
     $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
     $("rankMini").innerHTML = rankInsigniaSvg(level, 28);
-    $("rankName").textContent = "Lv " + level + " · " + rankForLevel(level);
+    const pfx = state.prestige > 0 ? "P" + state.prestige + " · " : "";
+    $("rankName").textContent = pfx + "Lv " + level + " · " + rankForLevel(level) + (state.xpTotal >= XP_CAP ? " · PRESTIGE READY" : "");
     const into = state.xpTotal - (level - 1) * XP_PER_LEVEL;
     $("headXpMeter").style.width = Math.min(100, into / XP_PER_LEVEL * 100) + "%";
     $("headXpText").textContent = state.xpTotal + " / " + XP_CAP + " XP";
@@ -957,7 +1262,7 @@ if (typeof document !== "undefined") {
     hb.disabled = dx.claimable <= 0;
     hb.classList.toggle("glow", dx.claimable > 0);
     $("headStackCount").textContent = "Stacked ×" + dx.stack + (dx.active ? " · 2× ON" : "");
-    $("sideXp").innerHTML = "Level " + level + " · " + esc(rankForLevel(level)) + "<br>" + state.xpTotal + " / " + XP_CAP + " XP<br>" + state.coins.toLocaleString() + " War Coins";
+    $("sideXp").innerHTML = (state.prestige > 0 ? "Prestige " + state.prestige + "<br>" : "") + "Level " + level + " · " + esc(rankForLevel(level)) + "<br>" + state.xpTotal + " / " + XP_CAP + " XP<br>" + state.coins.toLocaleString() + " War Coins";
   }
   function doClaim(sourceEl) {
     if (claimDoubleToState(state)) {
@@ -1032,15 +1337,19 @@ if (typeof document !== "undefined") {
     $("logCards").innerHTML = EXERCISES.filter((e) => e.day === logDay).map((ex) => {
       const t = state.targets[ex.id];
       const saved = session && session.lifts[ex.id];
+      // History prefill (copy-to-today / load-back): shown when it fills an
+      // unlogged lift, or when load-back overrides for editing.
+      const pf = logPrefill[ex.id];
+      const show = pf && (pf.override || !saved);
       const setInputs = Array.from({ length: t.sets }, (_, i) =>
-        `<div class="set-row"><span>Set ${i + 1}</span><input type="number" inputmode="numeric" min="0" data-set="${i}" placeholder="${t.repMax} reps" value="${saved ? saved.reps[i] ?? "" : ""}"></div>`).join("");
+        `<div class="set-row"><span>Set ${i + 1}</span><input type="number" inputmode="numeric" min="0" data-set="${i}" placeholder="${t.repMax} reps" value="${show ? pf.reps[i] ?? "" : saved ? saved.reps[i] ?? "" : ""}"></div>`).join("");
       return `<div class="card" id="logform-${ex.id}">
         <h3>${esc(ex.name)} <span class="muted">· target ${t.sets} × ${t.repMin === t.repMax ? t.repMin : t.repMin + "–" + t.repMax} · ${fmtWeight(ex, t.weight)}</span></h3>
-        <p class="last">${lastLiftText(ex.id)}</p>
+        <p class="last">${lastLiftText(ex.id)}${show ? ` <span class="badge active">Filled from ${esc(pf.fromDate)}</span>` : ""}</p>
         <label>Weight lifted (lbs)</label>
-        <input type="number" inputmode="decimal" min="0" data-weight value="${saved ? saved.weight : t.weight}">
+        <input type="number" inputmode="decimal" min="0" data-weight value="${show ? pf.weight : saved ? saved.weight : t.weight}">
         ${setInputs}
-        <label class="goal-row"><input type="checkbox" data-goal ${saved && saved.goalHit ? "checked" : ""}> I hit my goal on this lift</label>
+        <label class="goal-row"><input type="checkbox" data-goal ${show ? pf.goalHit ? "checked" : "" : saved && saved.goalHit ? "checked" : ""}> I hit my goal on this lift</label>
         <button data-save="${ex.id}">Save this lift</button>
         <div class="result" data-result="${ex.id}">${saved ? "Saved: " + fmtWeight(ex, saved.weight) + " × " + saved.reps.join("/") + (saved.xp !== null ? " · +" + saved.xp + " XP (" + esc(saved.label) + ")" : "") : ""}</div>
       </div>`;
@@ -1053,18 +1362,23 @@ if (typeof document !== "undefined") {
       const goalHit = card.querySelector("[data-goal]").checked;
       if (isNaN(weight) || reps.length === 0) { alert("Enter a weight and at least one set of reps."); return; }
       const res = saveLiftToState(state, dateKey(new Date()), logDay, exId, weight, reps, goalHit);
+      delete logPrefill[exId]; // a saved prefill is spent
       persist();
       const cls = res.scored.label === "Move-up" ? "up" : res.scored.label === "Held" ? "flat" : "reset";
-      let html = `<span class="${cls}">+${res.earned} XP · ${res.scored.label}${res.doubled ? " · 2× doubled" : ""}</span>`;
+      const xpTxt = res.replaced
+        ? `XP updated (${res.xpDelta >= 0 ? "+" : ""}${res.xpDelta}) · ${res.scored.label}`
+        : `+${res.earned} XP · ${res.scored.label}`;
+      let html = `<span class="${cls}">${xpTxt}${goalHit ? " + goal hit" : ""}${res.doubled ? " · 2× doubled" : ""}</span>`;
       if (res.coinsEarned > 0) html += ` · <span class="gold">+${res.coinsEarned} WC</span>`;
       if (res.rolled !== null) html += ` · 🎯 Target rolled up to ${fmtWeight(ex, res.rolled)} — a 2× charge is banked, claim it in Progress.`;
       card.querySelector("[data-result]").innerHTML = "Saved: " + fmtWeight(ex, weight) + " × " + reps.join("/") + " — " + html;
       afterXp(res, null);
       if (!res.leveledUp) {
-        if (res.scored.label === "Move-up" || res.rolled !== null) gunshotSound();
+        if (res.scored.label === "Move-up" || res.rolled !== null) { gunshotSound(); muzzleFlash(); }
         else blip();
       }
       renderHeader();
+      notifyAwards();
     }));
   }
 
@@ -1096,8 +1410,12 @@ if (typeof document !== "undefined") {
     $("foodHistory").innerHTML = keys.map((k) => foodDayHtml(k, false)).join("") || `<p class="muted">No past days yet.</p>`;
     document.querySelectorAll("[data-remove-food]").forEach((b) => b.addEventListener("click", () => {
       const [k, id] = b.dataset.removeFood.split(":");
-      if (!confirm("Remove this food entry? Totals will recalculate.")) return;
-      if (removeFoodFromState(state, k, id)) { persist(); renderFood(); }
+      if (!confirm("Remove this food entry? Totals and bonus XP will recalculate.")) return;
+      const info = removeFoodFromState(state, k, id);
+      if (info.removed) {
+        persist(); renderFood(); renderHeader();
+        if (info.xpLost > 0) showBanner("Entry removed — the day no longer hits the " + (info.lostProtein ? "protein" : "") + (info.lostProtein && info.lostCal ? " and calorie" : info.lostCal ? "calorie" : "") + " target, so " + info.xpLost + " bonus XP was removed. War Coins are never clawed back.");
+      }
     }));
   }
   $("addFoodBtn").addEventListener("click", () => {
@@ -1111,6 +1429,7 @@ if (typeof document !== "undefined") {
     renderFood(); renderHeader();
     afterXp(res, "Logged <b>" + esc(name) + "</b> — " + cal + " cal · " + protein + "g protein. Running total: " + res.totals.cal.toLocaleString() + " cal · " + res.totals.protein + "g protein." + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
     blip();
+    notifyAwards();
   });
 
   /* ----- Progress ----- */
@@ -1119,8 +1438,16 @@ if (typeof document !== "undefined") {
     $("rankLine").textContent = "Level " + level + " · " + rankForLevel(level);
     $("xpLine").textContent = state.xpTotal + " / " + XP_CAP + " XP";
     $("xpMeter").style.width = Math.min(100, (state.xpTotal - (level - 1) * XP_PER_LEVEL) / XP_PER_LEVEL * 100) + "%";
-    $("xpCapLine").textContent = "Progress toward the 200 XP cap: " + Math.round(state.xpTotal / XP_CAP * 100) + "%.";
+    $("xpCapLine").textContent = state.xpTotal >= XP_CAP
+      ? "200 / 200 XP — prestige ready! Hit PRESTIGE below to bank it and restart at Level 1."
+      : "Progress toward the 200 XP cap: " + Math.round(state.xpTotal / XP_CAP * 100) + "%.";
     $("coinsLine").textContent = "💰 " + state.coins.toLocaleString() + " War Coins — earned from sessions, move-ups, target hits, sets, reps, fuel days, and weigh-ins." + (dateKey(new Date()) <= WC_MULT_END ? " 1.5× boost active through Nov 10 on weigh-ins, weekly gains, and fuel days." : "");
+    const pCount = state.prestige || 0;
+    $("prestigeStatus").innerHTML = pCount > 0
+      ? "Prestige <b>" + pCount + "</b> · " + pCount + " of 10 vault emblems lit."
+      : "Prestige <b>0</b> — reach 200 XP to unlock your first prestige.";
+    $("prestigeBtn").disabled = state.xpTotal < XP_CAP;
+    $("prestigeBtn").classList.toggle("glow", state.xpTotal >= XP_CAP);
     const dx = state.doubleXp;
     $("doubleLine").innerHTML = "Stack: <b>" + dx.stack + " banked</b> · Active: " + (dx.active ? `<span class="badge active">ON — next session pays double</span>` : `<span class="badge closed">OFF</span>`) + " · Claimable: <b>" + dx.claimable + "</b>";
     $("claimBtn").disabled = dx.claimable <= 0;
@@ -1137,11 +1464,18 @@ if (typeof document !== "undefined") {
       const lo = (lv - 1) * XP_PER_LEVEL, hi = lv === 20 ? XP_CAP : lv * XP_PER_LEVEL - 1;
       return `<div class="ladder-row ${st.toLowerCase()}"><span class="ladder-ins">${rankInsigniaSvg(lv, 40)}</span><span class="ladder-lv">Lv ${lv}</span><b>${esc(name)}</b><span class="ladder-xp">${lo}–${hi} XP</span><span class="badge ${st === "CURRENT" ? "active" : st === "EARNED" ? "open" : "closed"}">${st}</span></div>`;
     }).join("");
-    // Prestige vault: literal cuts from his CoD 5 reference sheet, all locked at prestige 0.
+    // Prestige vault: emblems light up per prestige count (prestige 1 lights
+    // emblem 1, and so on; past 10, all ten stay lit).
     const ORD = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"];
-    $("prestigeLine").textContent = "Prestige 0 — you haven't prestiged yet. All ten emblems are locked; they light up as prestige is earned.";
-    $("vaultBox").innerHTML = `<div class="vault-grid">` + ORD.map((o, i) =>
-      `<div class="vault-item locked"><img src="./assets/prestige/prestige-${i + 1}.jpg" alt="${o} Prestige emblem" loading="lazy"><b>${o} Prestige</b><span class="badge closed">LOCKED</span></div>`).join("") + `</div><p class="muted">Emblems cut from your Call of Duty 5 prestige reference sheet. Private personal use only.</p>`;
+    $("prestigeLine").textContent = pCount === 0
+      ? "Prestige 0 — you haven't prestiged yet. All ten emblems are locked; they light up as prestige is earned."
+      : pCount >= 10
+        ? "Prestige " + pCount + " — all ten emblems earned. Keep climbing for the next prestige."
+        : "Prestige " + pCount + " — " + pCount + " of 10 emblems lit; the next lights up at prestige " + (pCount + 1) + ".";
+    $("vaultBox").innerHTML = `<div class="vault-grid">` + ORD.map((o, i) => {
+      const lit = i < pCount;
+      return `<div class="vault-item ${lit ? "earned" : "locked"}"><img src="./assets/prestige/prestige-${i + 1}.jpg" alt="${o} Prestige emblem" loading="lazy"><b>${o} Prestige</b><span class="badge ${lit ? "open" : "closed"}">${lit ? "EARNED" : "LOCKED"}</span></div>`;
+    }).join("") + `</div><p class="muted">Emblems cut from your Call of Duty 5 prestige reference sheet. Private personal use only.</p>`;
     $("weightList").innerHTML = state.weights.map((w) => `<div class="food-entry"><span>${fmtDate(w.date)}</span><b>${w.weight} lbs</b></div>`).join("");
     const sorted = [...state.sessions].sort((a, b) => b.date.localeCompare(a.date));
     $("historyList").innerHTML = sorted.length === 0 ? `<p class="muted">No sessions yet.</p>` : sorted.map((s) => {
@@ -1151,7 +1485,7 @@ if (typeof document !== "undefined") {
         const xpTxt = l.xp === null ? (l.label && l.label !== "Seeded" ? esc(l.label) + " (synced)" : "seeded") : "+" + l.xp + " XP (" + esc(l.label) + ")";
         return `<div class="lift-line"><span>${esc(ex.name)} — ${fmtWeight(ex, l.weight)} × ${l.reps.join("/")}${l.note ? " (" + esc(l.note) + ")" : ""}</span><span><span class="xp">${xpTxt}</span> <button class="small danger" data-del-lift="${s.date}:${exId}">Delete</button></span></div>`;
       }).join("");
-      return `<div class="sess"><div class="sess-head"><b>${fmtDate(s.date)} · ${day ? day.name : s.dayId}${typeof s.strengthXp === "number" ? " · " + s.strengthXp + " XP" : ""}</b><span>${s.doubled === true ? `<span class="badge active">2× doubled</span> ` : ""}<button class="small secondary" data-copy="${s.date}">Copy as text</button> <button class="small danger" data-del-sess="${s.date}">Delete session</button></span></div>${lifts}</div>`;
+      return `<div class="sess"><div class="sess-head"><b>${fmtDate(s.date)} · ${day ? day.name : s.dayId}${typeof s.strengthXp === "number" ? " · " + s.strengthXp + " XP" : ""}</b><span>${s.doubled === true ? `<span class="badge active">2× doubled</span> ` : ""}<button class="small secondary" data-copy="${s.date}">Copy as text</button> <button class="small secondary" data-copy-today="${s.date}">Copy to today</button> <button class="small secondary" data-load-back="${s.date}">Load to log</button> <button class="small danger" data-del-sess="${s.date}">Delete session</button></span></div>${lifts}</div>`;
     }).join("");
     $("historyList").querySelectorAll("[data-del-lift]").forEach((b) => b.addEventListener("click", () => {
       const [d, exId] = b.dataset.delLift.split(":");
@@ -1171,9 +1505,71 @@ if (typeof document !== "undefined") {
       if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showBanner("Workout copied as text.")).catch(() => {});
       else showBanner("Copy not available in this browser.");
     }));
+    // History tools: copy-to-today merges a past session into today's log
+    // (unscored until each lift is saved, and never overwriting a lift
+    // already logged today); load-back fills the log forms with a past
+    // session's weights/reps for editing. Neither writes state until Save,
+    // so scored history is never duplicated by the tools themselves.
+    function fillLogFromSession(s, override) {
+      const today = dateKey(new Date());
+      if (s.date === today) { showBanner("That's already today's session."); return; }
+      const todaySess = findSession(state, today);
+      let filled = 0;
+      Object.entries(s.lifts).forEach(([exId, l]) => {
+        if (!EX_BY_ID[exId]) return;
+        if (!override && todaySess && todaySess.lifts[exId]) return;
+        logPrefill[exId] = { weight: l.weight, reps: l.reps.slice(), goalHit: !!l.goalHit, override, fromDate: fmtDate(s.date) };
+        filled++;
+      });
+      if (filled === 0) { showBanner("Nothing to fill — every lift from that session is already logged today."); return; }
+      logDay = s.dayId;
+      switchTab("log");
+      renderLog();
+      const day = DAYS.find((d) => d.id === s.dayId);
+      showBanner((override ? "Loaded " : "Copied ") + fmtDate(s.date) + " · " + (day ? day.name : s.dayId) + " into today's log — save each lift to score it.");
+    }
+    $("historyList").querySelectorAll("[data-copy-today]").forEach((b) => b.addEventListener("click", () => {
+      const s = findSession(state, b.dataset.copyToday);
+      if (s) fillLogFromSession(s, false);
+    }));
+    $("historyList").querySelectorAll("[data-load-back]").forEach((b) => b.addEventListener("click", () => {
+      const s = findSession(state, b.dataset.loadBack);
+      if (s) fillLogFromSession(s, true);
+    }));
+    // Fuel summary: last 7 logged food days with bonus badges.
+    const fkeys = Object.keys(state.foodDays || {}).sort().reverse().slice(0, 7);
+    $("fuelBox").innerHTML = fkeys.length === 0 ? `<p class="muted">No food logged yet. Log food on the Log tab.</p>` : fkeys.map((k) => {
+      const day = state.foodDays[k], t = dayTotals(day);
+      return `<div class="food-entry"><span>${fmtDate(k)}</span><span>${t.cal.toLocaleString()} cal · ${t.protein}g protein ${day.bonus && day.bonus.protein ? `<span class="badge open">Protein ✓</span>` : ""} ${day.bonus && day.bonus.cal ? `<span class="badge open">Calories ✓</span>` : ""}</span></div>`;
+    }).join("") + `<p class="muted">Targets: 3,200 cal · 140g protein. Log food on the Log tab.</p>`;
+    // Achievements + quests (recognition only — no XP or War Coins attached).
+    const earnedA = state.achievements || [];
+    $("achievementsCount").textContent = earnedA.length + " / " + ACHIEVEMENTS.length + " earned";
+    $("achievementsBox").innerHTML = `<div class="ach-grid">` + ACHIEVEMENTS.map((a) => {
+      const got = earnedA.includes(a.id);
+      return `<div class="ach-item ${got ? "earned" : "locked"}"><b>${esc(a.name)}</b><span>${esc(a.desc)}</span><span class="badge ${got ? "open" : "closed"}">${got ? "EARNED" : "LOCKED"}</span></div>`;
+    }).join("") + `</div>`;
+    const wk = weekKeyOf(dateKey(new Date()));
+    $("questsBox").innerHTML = QUESTS.map((q) => {
+      const pr = questProgress(state, q, wk);
+      return `<div class="quest-row"><div><b>${esc(q.name)}</b> <span class="muted">· ${esc(q.desc)}</span></div><div class="meter"><div style="width:${pr.target ? Math.round(pr.current / pr.target * 100) : 0}%"></div></div><span>${pr.current}/${pr.target} ${pr.done ? `<span class="badge open">COMPLETED</span>` : ""}</span></div>`;
+    }).join("") + `<p class="muted">Quests refresh every Monday. No XP or War Coins attached — recognition only.</p>`;
+    applyCollapse();
   }
   $("claimBtn").addEventListener("click", () => doClaim($("claimBtn")));
   $("headClaimBtn").addEventListener("click", () => doClaim($("headClaimBtn")));
+  $("prestigeBtn").addEventListener("click", () => {
+    if (!prestigeToState(state)) return;
+    const freshA = awardAchievements(state);
+    const freshQ = checkQuests(state);
+    persist();
+    prestigeStinger();
+    let msg = "🎖 Prestige " + state.prestige + "! XP reset to 0 — the climb starts again at Level 1. Coins, gear, history, and double-XP charges all carry over.";
+    freshA.forEach((a) => { msg += "<br>🏆 Achievement: <b>" + esc(a.name) + "</b>"; });
+    freshQ.forEach((q) => { msg += "<br>✅ Quest complete: <b>" + esc(q.name) + "</b>"; });
+    showBanner(msg);
+    renderProgress(); renderHeader(); renderCharacter();
+  });
   $("activateBtn").addEventListener("click", () => { if (activateDoubleToState(state)) { persist(); renderProgress(); renderHeader(); blip(); showBanner("2× XP is ON — your next session pays double, then it switches off."); } });
   $("ladderToggle").addEventListener("click", () => {
     const b = $("ladderBox");
@@ -1186,6 +1582,11 @@ if (typeof document !== "undefined") {
     $("vaultToggle").textContent = b.classList.contains("open") ? "Hide vault" : "Show vault";
   });
   $("stingerBtn").addEventListener("click", () => prestigeStinger());
+  /* ----- Sounds tab: one test button per sound function ----- */
+  document.querySelectorAll("[data-sound]").forEach((b) => b.addEventListener("click", () => {
+    const fn = { gunfire: gunshotSound, levelup: playLevelUp, claim: claimSting, unlock: unlockSound, crate: crateSound, reveal: revealSound, prestige: prestigeStinger }[b.dataset.sound];
+    if (fn) fn();
+  }));
   $("addWeightBtn").addEventListener("click", () => {
     const d = $("weightDate").value, w = parseFloat($("weightVal").value);
     if (!d || isNaN(w)) { alert("Enter a date and a weight."); return; }
@@ -1193,6 +1594,7 @@ if (typeof document !== "undefined") {
     persist(); renderProgress(); renderHeader();
     afterXp(res, (res.gained ? "Weigh-in logged: " + w + " lbs — weekly average gain, +2 XP." : "Weigh-in logged: " + w + " lbs.") + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
     blip();
+    notifyAwards();
   });
   $("muteBtn").addEventListener("click", () => { state.muted = !state.muted; persist(); renderHeader(); });
 
@@ -1304,6 +1706,15 @@ if (typeof document !== "undefined") {
       setTimeout(() => host.remove(), 800);
     } catch (e) {}
   }
+  function muzzleFlash() { // CSS-only target-celebration flash, paired with the gunshot sound
+    if (state.muted) return;
+    try {
+      const el = document.createElement("div");
+      el.className = "muzzle-flash";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 500);
+    } catch (e) {}
+  }
   function cryptoRnd() {
     try {
       const a = new Uint32Array(1);
@@ -1342,15 +1753,18 @@ if (typeof document !== "undefined") {
     state.coins += pend.scrap;
     const item = ITEM_BY_ID[pend.itemId];
     state.pendingDuplicate = null;
+    state.scrapCount = (state.scrapCount || 0) + 1;
     persist();
     hideModal("dupModal");
     renderShop(); renderHeader();
     showBanner("Scrapped <b>" + esc(item ? item.name : "duplicate") + "</b> for <b>+" + pend.scrap + " War Coins</b>.");
+    notifyAwards();
   });
 
   /* ----- Shop: depot console (drops + Armory/Collections/Ledger menu),
-     4-day rotating shelf (9 items a day), selectable crates ----- */
+     4-day rotating shelf (10 items a day), selectable crates ----- */
   let shopFilter = "shelf";
+  let shopEra = "all";
   let shopMenu = "armory";
   let selectedCrate = "rare"; // Rare is lit green by default
   function ledgerHtml() {
@@ -1358,7 +1772,7 @@ if (typeof document !== "undefined") {
     const boost = today <= WC_MULT_END;
     return `<p><b>Balance:</b> ${state.coins.toLocaleString()} War Coins · <b>Owned:</b> ${state.owned.length} items · <b>Stacked:</b> ×${state.doubleXp.stack}${state.doubleXp.active ? " · 2× ON" : ""}</p>`
       + `<p>${boost ? "1.5× boost active through Nov 10 on weigh-ins, weekly gains, and fuel days." : "No boost active."}</p>`
-      + `<p class="muted">How coins are earned — session +10 · set +1 · every 5 reps +1 · move-up +20 · target hit +30 · protein day +20 · calorie day +20 · weigh-in +15 · weekly gain +30. Coins are never clawed back when a lift or session is deleted.</p>`;
+      + `<p class="muted">How coins are earned — session +25 · set +1 · every 5 reps +1 · move-up +15 · target hit +10 · protein day +20 · calorie day +20 · weigh-in +15 · weekly gain +30. Coins are never clawed back when a lift or session is deleted; food-day bonus XP is recalculated when a food entry is removed, but its coins stay.</p>`;
   }
   function crateSvg(crate) {
     const color = crate.id === "epic" ? "#c8a84a" : crate.id === "rare" ? "#7dd87d" : "#8a8f5c";
@@ -1409,15 +1823,21 @@ if (typeof document !== "undefined") {
     $("shopFilters").innerHTML = filters.map(([f, label]) =>
       `<button class="chip ${shopFilter === f ? "on" : ""}" data-filter="${f}">${label}</button>`).join("");
     $("shopFilters").querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => { shopFilter = b.dataset.filter; renderShop(); }));
+    const eras = [["all", "All eras"], ["90s", "’90s gym bro"], ["2026", "2026 gym bro"]];
+    $("eraFilters").innerHTML = eras.map(([e, label]) =>
+      `<button class="chip ${shopEra === e ? "on" : ""}" data-era="${e}">${label}</button>`).join("");
+    $("eraFilters").querySelectorAll("[data-era]").forEach((b) => b.addEventListener("click", () => { shopEra = b.dataset.era; renderShop(); }));
     let items;
     if (shopFilter === "shelf") items = shelfItems(ri.idx);
     else if (shopFilter === "owned") items = SHOP_ITEMS.filter((it) => state.owned.includes(it.id));
     else if (shopFilter === "all") items = SHOP_ITEMS;
     else items = SHOP_ITEMS.filter((it) => slotFilter(it.slot) === shopFilter);
+    items = items.filter((it) => eraMatches(it, shopEra));
     $("shopGrid").innerHTML = items.length === 0 ? `<p class="muted">Nothing here yet.</p>` : items.map((it) => {
       const owned = state.owned.includes(it.id);
       const equippedId = state.equipped[it.slot];
       const isEquipped = equippedId === it.id;
+      const badge = eraBadge(it);
       const action = !owned
         ? `<button data-buy="${it.id}" ${state.coins < it.price ? "disabled" : ""}>Buy — ${it.price} WC</button>`
         : isEquipped
@@ -1425,7 +1845,7 @@ if (typeof document !== "undefined") {
           : `<button class="secondary" data-equip="${it.id}">Equip</button>`;
       return `<div class="card shop-card">
         <div class="shop-preview">${previewSvg(it)}</div>
-        <div class="shop-title"><b>${esc(it.name)}</b><button class="info-btn" data-info="${it.id}" aria-label="Item details">!</button></div>
+        <div class="shop-title"><b>${esc(it.name)}</b><span>${badge ? `<span class="era-badge">${badge}</span> ` : ""}<button class="info-btn" data-info="${it.id}" aria-label="Item details">!</button></span></div>
         <div class="shop-details" id="details-${it.id}">${itemDetailsHtml(it)}</div>
         <div class="shop-foot"><span class="price">${it.price} WC</span>${owned ? `<span class="owned-tag">${isEquipped ? "Equipped" : "Owned"}</span>` : ""}</div>
         ${action}
@@ -1445,6 +1865,7 @@ if (typeof document !== "undefined") {
     if (state.coins < it.price) { showBanner("Not enough War Coins — this costs " + it.price + " WC and you have " + state.coins.toLocaleString() + "."); return; }
     state.coins -= it.price;
     state.owned.push(id);
+    state.purchaseCount = (state.purchaseCount || 0) + 1;
     persist();
     unlockSound();
     $("unlockPreview").innerHTML = previewSvg(it);
@@ -1452,6 +1873,7 @@ if (typeof document !== "undefined") {
     $("unlockEquipBtn").dataset.equip = id;
     showModal("unlockModal");
     renderShop(); renderHeader();
+    notifyAwards();
   }
   $("unlockEquipBtn").addEventListener("click", () => {
     equipItem($("unlockEquipBtn").dataset.equip);
@@ -1462,12 +1884,17 @@ if (typeof document !== "undefined") {
     const it = ITEM_BY_ID[id];
     if (!it || !state.owned.includes(id)) return;
     state.equipped[it.slot] = id;
+    if (it.slot === "figure") state.figureVariant = id;
+    if (!Array.isArray(state.questEvents)) state.questEvents = [];
+    state.questEvents.push({ type: "equip", week: weekKeyOf(dateKey(new Date())) });
     persist();
     renderShop(); renderCharacter(); renderHeader();
     blip();
+    notifyAwards();
   }
   function unequipSlot(slot) {
     state.equipped[slot] = null;
+    if (slot === "figure") state.figureVariant = "standard";
     persist();
     renderShop(); renderCharacter(); renderHeader();
   }
@@ -1477,11 +1904,21 @@ if (typeof document !== "undefined") {
     if (!crate) return;
     if (state.coins < crate.price) { showBanner("Not enough War Coins — this drop costs " + crate.price + " WC."); return; }
     state.coins -= crate.price;
+    state.crateCount = (state.crateCount || 0) + 1;
+    if (!Array.isArray(state.questEvents)) state.questEvents = [];
+    state.questEvents.push({ type: "crate", week: weekKeyOf(dateKey(new Date())) });
     persist();
     const card = document.getElementById("crate-" + crateId);
     if (card) card.classList.add("opening");
+    // CSS-only opening overlay: a rattling crate with a popping lid for the
+    // existing 950ms window. Purely visual — it is hidden before any result
+    // or duplicate modal shows, so it can never block the scrap flow.
+    const overlay = $("crateOverlay");
+    if (overlay) overlay.classList.add("show");
     crateSound();
+    notifyAwards(); // crate-open quest + first-drop badge banner now; the reward modal follows
     setTimeout(() => {
+      if (overlay) overlay.classList.remove("show");
       if (card) card.classList.remove("opening");
       const res = resolveCrateReward(crate, state.owned, cryptoRnd);
       revealSound();
@@ -1523,10 +1960,10 @@ if (typeof document !== "undefined") {
   /* ----- Character ----- */
   function renderCharacter() {
     const latest = state.weights.length ? state.weights[state.weights.length - 1].weight : state.profile.startWeight;
-    $("charFigure").innerHTML = buildCharacterSvg(state.equipped, state.facialHair, latest);
+    $("charFigure").innerHTML = buildCharacterSvg(state.equipped, state.facialHair, latest, state.figureVariant);
     const level = levelForXp(state.xpTotal);
     $("charStats").innerHTML = "Weight: <b>" + latest + " lbs</b> (goal " + state.profile.goalWeight + ") · Level " + level + " " + esc(rankForLevel(level)) + " · " + state.xpTotal + " XP · " + state.coins.toLocaleString() + " WC";
-    const faces = [["clean", "Clean shaven"], ["stubble", "Stubble"], ["beard", "Beard"]];
+    const faces = [["clean", "Clean shaven"], ["stubble", "Stubble"], ["beard", "Beard"], ["moustache", "Moustache"]];
     $("faceChips").innerHTML = faces.map(([f, label]) =>
       `<button class="chip ${state.facialHair === f ? "on" : ""}" data-face="${f}">${label}</button>`).join("");
     $("faceChips").querySelectorAll("[data-face]").forEach((b) => b.addEventListener("click", () => {
@@ -1534,26 +1971,50 @@ if (typeof document !== "undefined") {
       persist();
       renderCharacter();
     }));
+    // Figure variants: Standard base plus owned variant items (e.g. Night Ops).
+    const variants = [{ id: "standard", name: "Standard" }].concat(
+      SHOP_ITEMS.filter((it) => it.slot === "figure").map((it) => ({ id: it.id, name: it.name })));
+    $("variantChips").innerHTML = variants.map((v) => {
+      const owned = v.id === "standard" || state.owned.includes(v.id);
+      return `<button class="chip ${state.figureVariant === v.id ? "on" : ""}" data-variant="${v.id}" ${owned ? "" : "disabled"}>${esc(v.name)}${owned ? "" : " · Locked"}</button>`;
+    }).join("");
+    $("variantChips").querySelectorAll("[data-variant]").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.variant;
+      if (id !== "standard" && !state.owned.includes(id)) { showBanner("Buy it in the shop first."); return; }
+      state.figureVariant = id;
+      state.equipped.figure = id === "standard" ? null : id;
+      persist();
+      renderCharacter();
+    }));
     const equippedEntries = Object.entries(state.equipped).filter(([, id]) => id);
     $("equippedList").innerHTML = equippedEntries.length === 0
-      ? `<p class="muted">Base kit only: plain shorts, basic olive fatigues shirt, ankle boots. Buy gear in the shop to build the kit.</p>`
+      ? `<p class="muted">Base kit only: military T-shirt, fatigue shorts, ankle boots. Buy gear in the shop to build the kit.</p>`
       : equippedEntries.map(([slot, id]) => {
         const it = ITEM_BY_ID[id];
-        return `<div class="food-entry"><span>${esc(it.name)} <span class="muted">· ${esc(slot)}</span></span><button class="small secondary" data-unequip-slot="${slot}">Unequip</button></div>`;
+        return `<div class="food-entry"><span>${esc(it.name)} <span class="muted">· ${esc(slot)}</span></span><span><button class="info-btn" data-char-info="${slot}" aria-label="Item details">!</button> <button class="small secondary" data-unequip-slot="${slot}">Unequip</button></span></div><div class="shop-details" id="char-details-${slot}">${itemDetailsHtml(it)}</div>`;
       }).join("");
     $("equippedList").querySelectorAll("[data-unequip-slot]").forEach((b) => b.addEventListener("click", () => unequipSlot(b.dataset.unequipSlot)));
+    $("equippedList").querySelectorAll("[data-char-info]").forEach((b) => b.addEventListener("click", () => {
+      const el = document.getElementById("char-details-" + b.dataset.charInfo);
+      if (el) el.classList.toggle("open");
+    }));
     const ownedNotEquipped = state.owned.filter((id) => !Object.values(state.equipped).includes(id));
     $("ownedChips").innerHTML = ownedNotEquipped.length === 0
       ? `<p class="muted">No unequipped gear. Everything you own is already on the figure — or the shop is waiting.</p>`
       : ownedNotEquipped.map((id) => {
         const it = ITEM_BY_ID[id];
-        return `<button class="chip" data-equip="${id}">${esc(it.name)}</button>`;
+        return `<div class="owned-row"><button class="chip" data-equip="${id}">${esc(it.name)}</button><button class="info-btn" data-char-info-owned="${id}" aria-label="Item details">!</button><div class="shop-details" id="char-details-owned-${id}">${itemDetailsHtml(it)}</div></div>`;
       }).join("");
     $("ownedChips").querySelectorAll("[data-equip]").forEach((b) => b.addEventListener("click", () => equipItem(b.dataset.equip)));
+    $("ownedChips").querySelectorAll("[data-char-info-owned]").forEach((b) => b.addEventListener("click", () => {
+      const el = document.getElementById("char-details-owned-" + b.dataset.charInfoOwned);
+      if (el) el.classList.toggle("open");
+    }));
   }
 
   /* ----- Init + midnight rollover ----- */
   $("weightDate").value = dateKey(new Date());
+  awardAchievements(state); // silently bank badges already earned by synced history
   persist(); // saves the v1 -> v2 migration on first Stage 2 launch
   renderHeader(); renderDays(); renderLog(); renderFood(); renderProgress();
   if (state.pendingDuplicate) showDupModal(); // a duplicate left mid-notice blocks again on next open

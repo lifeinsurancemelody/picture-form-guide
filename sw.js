@@ -1,8 +1,8 @@
-/* Picture Form Guide PWA — service worker (Stage 2 refined + artifact sync).
+/* Picture Form Guide PWA — service worker (parity build).
    Cache-first for the app shell so the app opens offline after the first
    visit. Photos and prestige emblems are precached too (small, local
    files). Version the cache name on each release so updates replace old files. */
-const CACHE = "pfg-pwa-v4";
+const CACHE = "pfg-pwa-v6";
 const CORE = [
   "./",
   "./index.html",

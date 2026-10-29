@@ -127,7 +127,10 @@ header {
   z-index: 20;
   background: rgba(11, 15, 10, 0.94);
   border-bottom: 1px solid var(--line);
-  padding: 10px 14px;
+  /* Safe-area top: in standalone PWA mode on notched iPhones the header
+     otherwise slides under the status bar and taps break until the user
+     drags the page down. */
+  padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -152,7 +155,7 @@ header {
 .icon-btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); padding: 8px 11px; }
 
 /* Layout */
-.layout { max-width: 860px; margin: 0 auto; padding: 14px; position: relative; z-index: 1; }
+.layout { max-width: 860px; margin: 0 auto; padding: 14px; position: relative; z-index: 1; padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 .tab { display: none; }
 .tab.active { display: block; }
 .card {
@@ -346,8 +349,8 @@ header {
   .week-badge, .xp-chip, .coins-chip { font-size: 11px; }
   .icon-btn { padding: 7px 9px; }
   .bottom-nav button { font-size: 11px; padding: 12px 0 10px; }
-  .chips.sticky { top: 104px; } /* header wraps to two rows on very narrow phones */
-  .ex-card { scroll-margin-top: 150px; }
+  .chips.sticky { top: calc(104px + env(safe-area-inset-top)); } /* header wraps to two rows on very narrow phones */
+  .ex-card { scroll-margin-top: calc(150px + env(safe-area-inset-top)); }
 }
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
@@ -379,8 +382,13 @@ header {
   .sidebar .side-xp { margin-top: 20px; font-size: 13px; color: var(--dim); }
 }
 
-.form-row { display: flex; gap: 8px; }
-.form-row > * { flex: 1; }
+.form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.form-row > * { flex: 1 1 140px; min-width: 0; }
+.form-row input { width: 100%; box-sizing: border-box; }
+@media (max-width: 480px) {
+  .form-row { flex-direction: column; }
+  .form-row > * { flex-basis: auto; }
+}
 .footer-note { font-size: 12px; color: var(--dim); text-align: center; margin: 20px 0 6px; }
 
 /* ---------- Refined header: two rows (week/coins/sound, then centered rank/XP module) ---------- */
@@ -464,10 +472,97 @@ header { flex-direction: column; align-items: stretch; }
   .shop-console .crate-row { flex-direction: column; }
 }
 
-/* Taller two-row header: jump chips and scrolled-to cards sit below it. */
-.chips.sticky { top: 116px; }
-.ex-card { scroll-margin-top: 170px; }
+/* Taller two-row header: jump chips and scrolled-to cards sit below it.
+   Sticky offsets include the safe-area inset so the taller notched header
+   never covers them. */
+.chips.sticky { top: calc(116px + env(safe-area-inset-top)); }
+.ex-card { scroll-margin-top: calc(170px + env(safe-area-inset-top)); }
 @media (max-width: 400px) {
-  .chips.sticky { top: 160px; }
-  .ex-card { scroll-margin-top: 210px; }
+  .chips.sticky { top: calc(160px + env(safe-area-inset-top)); }
+  .ex-card { scroll-margin-top: calc(210px + env(safe-area-inset-top)); }
 }
+
+/* ---------- Parity additions: era badges, locker rows, animations ---------- */
+.era-badge {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+  color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; padding: 2px 7px;
+  white-space: nowrap;
+}
+.owned-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.owned-row .shop-details { flex-basis: 100%; }
+/* Target-celebration muzzle flash: a brief gold burst, paired with the gunshot sound. */
+.muzzle-flash {
+  position: fixed; left: 50%; top: 22%; z-index: 300; pointer-events: none;
+  width: 120px; height: 120px; margin-left: -60px;
+  background: radial-gradient(circle, rgba(255, 230, 150, 0.95) 0%, rgba(200, 168, 74, 0.55) 35%, rgba(200, 168, 74, 0) 70%);
+  animation: muzzlePop 0.45s ease-out forwards;
+}
+@keyframes muzzlePop {
+  0% { transform: scale(0.3) rotate(0deg); opacity: 1; }
+  60% { transform: scale(1.25) rotate(12deg); opacity: 0.9; }
+  100% { transform: scale(1.6) rotate(24deg); opacity: 0; }
+}
+/* Crate-opening overlay: a rattling crate with a popping lid, shown only for
+   the existing 950ms open window and hidden before any result shows. */
+.crate-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(0, 0, 0, 0.6);
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.crate-overlay.show { display: flex; }
+.crate-box { position: relative; width: 130px; height: 100px; animation: crateRattle 0.9s ease-in-out; }
+.crate-body {
+  position: absolute; inset: 22px 0 0 0;
+  background: #3a3524; border: 3px solid var(--gold); border-radius: 6px;
+}
+.crate-lid {
+  position: absolute; top: 0; left: -6px; right: -6px; height: 26px;
+  background: #4a4430; border: 3px solid var(--gold); border-radius: 6px;
+  transform-origin: left bottom;
+  animation: lidPop 0.9s ease-in-out;
+}
+@keyframes crateRattle {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-6px) rotate(-2deg); }
+  40% { transform: translateX(5px) rotate(2deg); }
+  60% { transform: translateX(-4px) rotate(-1deg); }
+  80% { transform: translateX(3px) rotate(1deg); }
+}
+@keyframes lidPop {
+  0%, 55% { transform: rotate(0deg); }
+  75% { transform: rotate(-38deg) translateY(-4px); }
+  100% { transform: rotate(-24deg) translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .muzzle-flash, .crate-box, .crate-lid { animation: none !important; }
+  .muzzle-flash { display: none !important; }
+}
+
+/* ---------- Collapsible Progress cards ---------- */
+.card.collapsible .card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; gap: 8px;
+}
+.card.collapsible .card-head h2 { margin: 0; }
+.collapse-btn {
+  background: none; border: 0; color: var(--dim);
+  font-size: 18px; line-height: 1; padding: 4px 8px; flex-shrink: 0;
+}
+.card.collapsible.collapsed .card-body { display: none; }
+.card.collapsible.collapsed .collapse-btn { transform: rotate(180deg); }
+/* ---------- Achievements + quests ---------- */
+.ach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ach-item {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+  background: rgba(0, 0, 0, 0.25); font-size: 13px;
+}
+.ach-item b { display: block; font-size: 13px; }
+.ach-item span { color: var(--dim); font-size: 12px; }
+.ach-item.earned { border-color: var(--gold); }
+.ach-item.earned b { color: var(--gold); }
+.quest-row { margin-bottom: 12px; font-size: 13px; }
+.quest-row .meter { margin: 6px 0; }
+.vault-item.earned { border-color: var(--gold); }
+.vault-item.earned img { filter: none; }

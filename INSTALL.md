@@ -102,4 +102,63 @@ files on the host. The phone picks up the new version on next launch
 
 ## 2026-10-29 artifact snapshot sync
 
-The PWA now syncs to the Muse artifact app's dashboard (91 XP, level 10, 802 WC, 4 banked 2× charges with one active, all sessions through the Oct 29 Pull day, weights through Oct 28, food days back to Sep 28, 11 owned items, character equipped with Run the Race tank + dog tags + Field Bible, clean shaven). Rules: sessions/weights/food are added by date only (never duplicated, never overwriting); synced sessions carry xp:null lifts so deleting one never moves the total, and they bank no new 2× charges. Totals/coins/character/targets apply only when the stored state still matches the Oct 28 snapshot (83 XP, 1,160 WC, no session after Oct 14) — if he logged in the PWA since, only the missing dated records are added. Known gaps vs the artifact: dogtag-micah, figure-night, hoodie-camo-verse, and joggers-charcoal have no PWA catalog match and were not invented; hair/skin options don't exist in the PWA character, so those stay default; the PWA has one cable-pushdown slot (arms page) while the artifact tracks push (50) and arms (60) separately — the synced target is 60. Weight note: the artifact logs 151.4 lbs on the night of Oct 15 while the PWA seed holds 148.6 lbs that day; the PWA value was NOT overwritten. Service worker bumped to pfg-pwa-v4 so this update propagates whether it ships with the refinement text push or after it.
+The PWA now syncs to the Muse artifact app's dashboard (91 XP, level 10, 802 WC, 4 banked 2× charges with one active, all sessions through the Oct 29 Pull day, weights through Oct 28, food days back to Sep 28, 15 owned items (11 original + the 4 parity-build catalog additions, owned with no charge), character equipped with Run the Race tank + dog tags + Field Bible, clean shaven). Rules: sessions/weights/food are added by date only (never duplicated, never overwriting); synced sessions carry xp:null lifts so deleting one never moves the total, and they bank no new 2× charges. Totals/coins/character/targets apply only when the stored state still matches the Oct 28 snapshot (83 XP, 1,160 WC, no session after Oct 14) — if he logged in the PWA since, only the missing dated records are added. Known gaps vs the artifact: hair/skin options don't exist in the PWA character, so those stay default. Weight note: the artifact logs 151.4 lbs on the night of Oct 15 while the PWA seed holds 148.6 lbs that day; the PWA value was NOT overwritten. Service worker bumped to pfg-pwa-v4 so this update propagates whether it ships with the refinement text push or after it.
+
+## Parity build (local, not yet deployed — sw.js pfg-pwa-v5)
+
+Closes the gaps vs the Muse artifact app: Push day now has its own
+cable-pushdown exercise (target 50, own history) and the Oct 14 / 21 / 28
+push sessions' pushdowns (50 lbs) were migrated to it from the arms-day
+slot; arms-day pushdown history (60 lbs) is untouched, and phones that
+already synced get the same move via migrateState. XP now scores move-up
++1, goal/milestone +1, held/reset +0, first-time +1 (artifact ledger).
+War Coins now pay session +25, move-up +15, target hit +10 (sets +1,
+reps +1 per 5 unchanged); the 1.5× boost on weigh-ins, weekly gains, and
+fuel days through Nov 10, 2026 stays. History gains copy-to-today and
+load-back-to-form; re-saving a lift now replaces its XP instead of
+double-counting. Food delete recalculates the day's bonus flags and claws
+back the bonus XP (coins stay permanent). Shop gains era badges + filter
+('90s / 2026 / timeless), 4 catalog additions (dogtag-micah,
+hoodie-camo-verse, joggers-charcoal, Night Ops figure) taking the catalog
+to 40 items, so the 4-day shelf is now 4×10 anchored 2026-10-27. The
+Strength Board tallies progression labels regardless of xp:null (seeded
++ synced lifts count; only first-time "Logged" lifts have no progression label
+and aren't counted; there is no first-time board column). Locker "!"
+buttons, a Sounds tab, CSS crate-opening + muzzle-flash animations, and
+a figure-variant selector are in. Prestige is now earnable: at 200 XP
+the PRESTIGE button banks one prestige and resets XP to 0 / Level 1;
+coins, gear, history, and double-XP charges carry over; vault emblems
+light per prestige count. Achievements (14) and quests (6, weekly) are a
+new draft for approval — recognition only, no XP or WC rewards. Phone
+fixes: sticky header + sticky chips use safe-area-inset-top, bottom nav
+keeps safe-area-inset-bottom, weigh-in Date/Weight rows wrap and stack
+under 480px, all 12 Progress cards collapse with persisted state, and
+the character is reworked to the 'GIVE 'EM LEAD' reference style
+(bold-outline cel-shaded muscular cartoon; base = military tee +
+fatigue shorts + ankle boots; moustache is a toggleable facial-hair
+option; full gear via equipped items; mass scales visibly with
+weigh-ins). Seeded/synced history is never rescored. Achievements,
+quests, and the prestige-earning trigger from the old plan are now
+built as specified above; nothing in this section is deferred except
+on-phone confirmation of rendering, taps, sounds, and the safe-area
+header on a real notched iPhone.
+
+## Follow-up: owned union + seeded labels (local, not yet deployed — sw.js pfg-pwa-v6)
+
+The four parity-build catalog additions are now marked owned with no
+charge (proven artifact-owned): Micah Dog Tags (dogtag-micah), Camo Verse
+Hoodie (hoodie-camo-verse), Charcoal Joggers (joggers-charcoal), Night Ops
+Figure (figure-night). The snapshot sync unions them into the owned set on
+existing phones (unguarded, like the original owned union) and the
+fresh-install seed owns all 15 items; a second run is a no-op. The Camo
+Verse Hoodie's verse/word stays blank pending the user's call — nothing
+invented. The four seeded sessions now carry artifact-record progression
+labels (Oct 8 pull: Move-up/Move-up/Held/Held; Oct 9 legs:
+Move-up/Move-up/Move-up/Held; Oct 13 arms:
+Move-up/Move-up/Move-up/Move-up/Held/Reset; Oct 14 push: 4× Move-up under
+the push-day pushdown exercise), so the Strength Board counts full history:
+44 Progress / 7 Held / 7 Reset (seeded 13/4/1 + synced 31/3/6). Lifts stay
+xp:null — labeling never moves any XP total. Phones that already synced
+get the same seeded labels via a backfill in the sync (only lifts still
+saying "Seeded" are relabeled; re-saved lifts untouched). Service worker
+bumped to v6 so this app.js change propagates to phones that installed v5.
