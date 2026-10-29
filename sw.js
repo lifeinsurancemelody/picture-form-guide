@@ -1,8 +1,8 @@
-/* Picture Form Guide PWA — service worker (Stage 2).
-   Cache-first for the app shell so the app opens offline after the first visit.
-   Photos are precached too (small, local files). Version the cache name on
-   each release so updates replace old files. */
-const CACHE = "pfg-pwa-v2";
+/* Picture Form Guide PWA — service worker (Stage 2 refined + artifact sync).
+   Cache-first for the app shell so the app opens offline after the first
+   visit. Photos and prestige emblems are precached too (small, local
+   files). Version the cache name on each release so updates replace old files. */
+const CACHE = "pfg-pwa-v4";
 const CORE = [
   "./",
   "./index.html",
@@ -29,7 +29,17 @@ const CORE = [
   "./assets/photos/goblet-squat.jpg",
   "./assets/photos/romanian-deadlift.jpg",
   "./assets/photos/walking-lunge.jpg",
-  "./assets/photos/calf-raise.jpg"
+  "./assets/photos/calf-raise.jpg",
+  "./assets/prestige/prestige-1.jpg",
+  "./assets/prestige/prestige-2.jpg",
+  "./assets/prestige/prestige-3.jpg",
+  "./assets/prestige/prestige-4.jpg",
+  "./assets/prestige/prestige-5.jpg",
+  "./assets/prestige/prestige-6.jpg",
+  "./assets/prestige/prestige-7.jpg",
+  "./assets/prestige/prestige-8.jpg",
+  "./assets/prestige/prestige-9.jpg",
+  "./assets/prestige/prestige-10.jpg"
 ];
 
 self.addEventListener("install", (event) => {

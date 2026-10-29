@@ -63,6 +63,82 @@ function weekFor(d) {
 }
 function levelForXp(xp) { return Math.min(20, Math.floor(xp / XP_PER_LEVEL) + 1); }
 function rankForLevel(level) { return RANKS[level - 1]; }
+/* CoD-style rank insignia as inline SVG (pure, testable). Enlisted chevrons
+   build stripe by stripe with rockers below; First Sergeant adds a diamond,
+   Sergeant Major a star, Command Sergeant Major star + wreath. Officers: gold
+   bar (2nd Lt), silver bar (1st Lt), double silver bars (Captain), gold oak
+   leaf (Major), silver oak leaf (Lt Col), eagle (Colonel), 1-4 silver stars
+   (Brigadier General through Commander). All badges share a 60x92 frame. */
+function starPts(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.42;
+    const a = -Math.PI / 2 + i * Math.PI / 5;
+    pts.push((cx + rad * Math.cos(a)).toFixed(1) + "," + (cy + rad * Math.sin(a)).toFixed(1));
+  }
+  return pts.join(" ");
+}
+function rankInsigniaSvg(level, size) {
+  const G = "#c8a84a", S = "#d7d7d7", D = "#0e1110";
+  const chev = (y) => `<polyline points="15,${y} 30,${y - 12} 45,${y}" fill="none" stroke="${G}" stroke-width="5" stroke-linejoin="miter"/>`;
+  const rock = (y) => `<path d="M15,${y} Q30,${y + 10} 45,${y}" fill="none" stroke="${G}" stroke-width="4"/>`;
+  const star = (cx, cy, r, fill) => `<polygon points="${starPts(cx, cy, r)}" fill="${fill}" stroke="${D}" stroke-width="1"/>`;
+  const diamond = `<polygon points="30,46 39,56 30,66 21,56" fill="${G}" stroke="${D}" stroke-width="1"/>`;
+  const wreath = `<path d="M17,66 Q11,56 17,46" fill="none" stroke="${G}" stroke-width="3"/><path d="M43,66 Q49,56 43,46" fill="none" stroke="${G}" stroke-width="3"/>`;
+  const bar = (x, fill) => `<rect x="${x}" y="28" width="8" height="36" fill="${fill}" stroke="${D}" stroke-width="1"/>`;
+  const leaf = (fill) => `<ellipse cx="30" cy="46" rx="10" ry="17" fill="${fill}" stroke="${D}" stroke-width="1"/><line x1="30" y1="30" x2="30" y2="62" stroke="${D}" stroke-width="1.5"/><line x1="30" y1="40" x2="22" y2="46" stroke="${D}" stroke-width="1"/><line x1="30" y1="40" x2="38" y2="46" stroke="${D}" stroke-width="1"/><line x1="30" y1="50" x2="22" y2="56" stroke="${D}" stroke-width="1"/><line x1="30" y1="50" x2="38" y2="56" stroke="${D}" stroke-width="1"/>`;
+  const eagle = `<polygon points="30,28 12,20 20,32 13,42 30,36 47,42 40,32 48,20" fill="${S}" stroke="${D}" stroke-width="1"/><ellipse cx="30" cy="44" rx="6" ry="10" fill="${S}" stroke="${D}" stroke-width="1"/><circle cx="30" cy="34" r="3" fill="${S}" stroke="${D}" stroke-width="1"/>`;
+  const chev3 = chev(20) + chev(32) + chev(44);
+  let inner = "";
+  if (level === 1) inner = chev(44);
+  else if (level === 2) inner = chev(36) + rock(56);
+  else if (level === 3) inner = chev(32) + chev(44);
+  else if (level === 4) inner = chev(28) + chev(40) + rock(56);
+  else if (level === 5) inner = chev(24) + chev(36) + chev(48);
+  else if (level === 6) inner = chev(24) + chev(36) + chev(48) + rock(62);
+  else if (level === 7) inner = chev(24) + chev(36) + chev(48) + rock(62) + rock(72);
+  else if (level === 8) inner = chev3 + rock(60) + rock(70) + rock(80);
+  else if (level === 9) inner = chev3 + diamond + rock(70) + rock(80);
+  else if (level === 10) inner = chev3 + star(30, 56, 10, G) + rock(70) + rock(80);
+  else if (level === 11) inner = chev3 + star(30, 56, 10, G) + wreath + rock(70) + rock(80);
+  else if (level === 12) inner = bar(26, G);
+  else if (level === 13) inner = bar(26, S);
+  else if (level === 14) inner = bar(19, S) + bar(33, S);
+  else if (level === 15) inner = leaf(G);
+  else if (level === 16) inner = leaf(S);
+  else if (level === 17) inner = eagle;
+  else if (level === 18) inner = star(30, 46, 13, S);
+  else if (level === 19) inner = star(20, 46, 10, S) + star(40, 46, 10, S);
+  else if (level === 20) inner = star(20, 34, 10, S) + star(40, 34, 10, S) + star(20, 58, 10, S) + star(40, 58, 10, S);
+  const px = size || 44;
+  return `<svg viewBox="0 0 60 92" width="${px}" height="${Math.round(px * 92 / 60)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Level ${level} insignia">${inner}</svg>`;
+}
+/* 4-day shop shelf: the 36-item catalog splits into 4 groups of 9, rotating
+   daily from the anchor. The next rotation is always at midnight. */
+const SHELF_ANCHOR = Date.UTC(2026, 9, 27);
+function shelfDayIndex(d) {
+  const day = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return ((Math.floor((day - SHELF_ANCHOR) / 86400000) % 4) + 4) % 4;
+}
+function shelfItems(idx) { return SHOP_ITEMS.slice(idx * 9, idx * 9 + 9); }
+function rotationInfo(now) {
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+  const minsLeft = Math.max(0, Math.round((midnight - now) / 60000));
+  return { idx: shelfDayIndex(now), minsLeft, dayFrac: 1 - minsLeft / 1440 };
+}
+/* Strength board tallies from session history. Seeded lifts (xp null) carry no
+   score and are skipped; first-time lifts (label "Logged") count separately. */
+function boardCounts(sessions) {
+  let progress = 0, held = 0, reset = 0, first = 0;
+  (sessions || []).forEach((s) => Object.values(s.lifts || {}).forEach((l) => {
+    if (l.xp === null || l.xp === undefined) return;
+    if (l.label === "Move-up") progress++;
+    else if (l.label === "Held") held++;
+    else if (l.label === "Reset") reset++;
+    else first++;
+  }));
+  return { progress, held, reset, first };
+}
 /* Real gym loads: dumbbells +5, skipping 7.5s and 22.5s (they don't exist at his gym);
    cables move to the next 10-lb stack setting, 40 -> 50, never 45. */
 function nextLoad(ex, weight) {
@@ -102,26 +178,186 @@ function weekKeyOf(dateStr) {
 }
 function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
 
+/* ---------------- Artifact snapshot sync (2026-10-29) ----------------
+   One-way sync from the Muse artifact app's dashboard, so the PWA lands
+   current (91 XP, level 10, 802 WC) instead of the Oct 28 seed. Sessions,
+   weights, and food days are added BY DATE (never duplicated, never
+   overwriting an existing date). Added sessions carry xp:null lifts — their
+   XP is already inside the 91 total — so deleting one never moves the
+   total, exactly like the original seeded lifts. Synced sessions bank NO
+   new claimable double-XP charges.
+   GUARD: totals/coins/character/targets are applied ONLY when the stored
+   state still matches the known Oct 28 snapshot (xpTotal 83 AND coins 1160
+   AND no session dated after 2026-10-14). If he logged anything in the
+   PWA since, totals/coins/character/targets are left alone and only the
+   missing dated records are added. The whole sync is idempotent: running
+   it twice changes nothing the second time.
+   NOTE: the PWA has ONE cable-pushdown slot (surfaced on the arms page)
+   while the artifact tracks push pushdown (50) and arms pushdown2 (60)
+   separately. The synced target is 60 (latest arms weight); push-day
+   pushdown history (50) is preserved in sessions. */
+const SYNC_LABEL = { progress: "Move-up", held: "Held", reset: "Reset" };
+function syncLift(weight, reps, status, extra) {
+  return Object.assign({ weight, reps, goalHit: false, xp: null, label: SYNC_LABEL[status] }, extra || {});
+}
+const SYNC_SESSIONS = [
+  { date: "2026-10-15", dayId: "pull", doubled: false, strengthXp: 8, lifts: {
+    "lat-pulldown": syncLift(80, [15, 15, 15], "progress"),
+    "single-arm-row": syncLift(40, [12, 12, 12], "progress"),
+    "face-pull": syncLift(40, [12, 12, 15], "progress"),
+    "hammer-curl": syncLift(20, [12, 12, 12], "progress") } },
+  { date: "2026-10-16", dayId: "legs", doubled: false, strengthXp: 5, lifts: {
+    "goblet-squat": syncLift(35, [15, 15, 15], "reset"),
+    "romanian-deadlift": syncLift(20, [12, 12, 12], "reset"),
+    "walking-lunge": syncLift(15, [12, 12], "held"),
+    "calf-raise": syncLift(15, [20, 20], "progress") } },
+  { date: "2026-10-20", dayId: "arms", doubled: false, strengthXp: 10, lifts: {
+    "cable-lateral-raise": syncLift(20, [15, 12, 12, 10], "progress"),
+    "db-lateral-raise": syncLift(10, [15, 12, 12], "progress"),
+    "bicep-curl": syncLift(25, [12, 10, 10], "held"),
+    "cable-pushdown": syncLift(50, [15, 15, 15], "progress"),
+    "incline-curl": syncLift(15, [12, 12, 12], "progress"),
+    "overhead-extension": syncLift(40, [12, 12, 12], "progress") } },
+  { date: "2026-10-21", dayId: "push", doubled: false, strengthXp: 5, lifts: {
+    "bench-press": syncLift(35, [12, 12, 12, 12], "progress"),
+    "overhead-press": syncLift(20, [12, 12, 12], "reset"),
+    "incline-press": syncLift(20, [15, 12, 12], "progress"),
+    "cable-pushdown": syncLift(50, [12, 12, 12], "held") } },
+  { date: "2026-10-22", dayId: "pull", doubled: false, strengthXp: 5, lifts: {
+    "lat-pulldown": syncLift(90, [12, 12, 10, 12], "progress"),
+    "single-arm-row": syncLift(45, [12, 12, 12], "progress"),
+    "face-pull": syncLift(50, [12, 10, 12], "progress"),
+    "hammer-curl": syncLift(25, [10, 12, 10], "progress") } },
+  { date: "2026-10-23", dayId: "legs", doubled: false, strengthXp: 7, lifts: {
+    "goblet-squat": syncLift(40, [12, 12, 12, 12], "progress"),
+    "romanian-deadlift": syncLift(25, [12, 12, 12], "progress"),
+    "walking-lunge": syncLift(20, [13, 13], "progress"),
+    "calf-raise": syncLift(20, [20, 20], "progress") } },
+  { date: "2026-10-27", dayId: "arms", doubled: true, strengthXp: 10, lifts: {
+    "cable-lateral-raise": syncLift(20, [12, 12, 12, 12], "reset"),
+    "db-lateral-raise": syncLift(15, [10, 8, 10], "progress"),
+    "bicep-curl": syncLift(25, [12, 12, 10], "progress"),
+    "cable-pushdown": syncLift(60, [12, 10, 10], "progress"),
+    "incline-curl": syncLift(20, [12, 10, 10], "progress"),
+    "overhead-extension": syncLift(50, [10, 10], "progress") } },
+  { date: "2026-10-28", dayId: "push", doubled: true, strengthXp: 6, lifts: {
+    "bench-press": syncLift(40, [8, 8, 8], "progress"),
+    "overhead-press": syncLift(25, [8, 8, 8], "progress"),
+    "incline-press": syncLift(25, [9, 8, 8], "progress"),
+    "cable-pushdown": syncLift(50, [12, 11, 12], "reset") } },
+  { date: "2026-10-29", dayId: "pull", doubled: true, strengthXp: 8, lifts: {
+    "lat-pulldown": syncLift(90, [12, 12, 12, 12], "progress", { goalHit: true, note: "Milestone · target hit" }),
+    "single-arm-row": syncLift(50, [10, 10, 12], "progress"),
+    "face-pull": syncLift(50, [12, 12, 12], "progress"),
+    "hammer-curl": syncLift(25, [10, 10, 8], "reset", { note: "Failed on last set" }) } }
+];
+const SYNC_WEIGHTS = [
+  { date: "2026-10-16", weight: 149 }, { date: "2026-10-20", weight: 149.8 },
+  { date: "2026-10-21", weight: 151.8 }, { date: "2026-10-22", weight: 152.6 },
+  { date: "2026-10-24", weight: 150.4 }, { date: "2026-10-25", weight: 151.4 },
+  { date: "2026-10-26", weight: 154.4 }, { date: "2026-10-27", weight: 151.4 },
+  { date: "2026-10-28", weight: 152.6 }
+];
+function syncFoodDay(cal, protein, proteinBonus, calBonus) {
+  return { entries: [{ id: "sync-day", name: "Synced day total", cal, protein, time: "12:00" }],
+    bonus: { protein: proteinBonus, cal: calBonus } };
+}
+const SYNC_FOOD_DAYS = {
+  "2026-09-28": syncFoodDay(2215, 177, true, false),
+  "2026-09-29": syncFoodDay(2040, 144, true, false),
+  "2026-09-30": syncFoodDay(2110, 114, false, false),
+  "2026-10-01": syncFoodDay(1720, 129, false, false),
+  "2026-10-02": syncFoodDay(1870, 159, true, false),
+  "2026-10-09": syncFoodDay(1940, 160, true, false),
+  "2026-10-10": syncFoodDay(2060, 180, true, false),
+  "2026-10-13": syncFoodDay(890, 58, false, false),
+  "2026-10-14": syncFoodDay(3430, 167, true, true),
+  "2026-10-15": syncFoodDay(1770, 157, true, false),
+  "2026-10-16": syncFoodDay(2230, 116, false, false),
+  "2026-10-19": syncFoodDay(1297, 121, false, false),
+  "2026-10-21": syncFoodDay(2520, 154, true, false),
+  "2026-10-22": syncFoodDay(2060, 110, false, false),
+  "2026-10-27": syncFoodDay(1410, 126, false, false)
+};
+Object.entries(SYNC_FOOD_DAYS).forEach(([d, day]) => { day.entries[0].id = "sync-" + d; });
+// Artifact owned items mapped to PWA catalog ids by name. Unmapped (no PWA
+// catalog match, NOT invented): dogtag-micah, figure-night, hoodie-camo-verse,
+// joggers-charcoal. Artifact tee-eph610 maps to the PWA Armor of God tee
+// (Eph 6); the PWA item cites Eph 6:11, the artifact id cites 6:10.
+const SYNC_OWNED = ["dogtags", "bible", "wooden-cross", "pith-helmet", "saint-jacket",
+  "field-pouch", "run-tank", "heartily-tee", "armor-tee", "faith-tee", "courage-crew"];
+const SYNC_EQUIPPED = { top: "run-tank", neck: "dogtags", hand: "bible" };
+const SYNC_TARGETS = { "lat-pulldown": 100, "single-arm-row": 50, "face-pull": 50,
+  "hammer-curl": 25, "bench-press": 40, "overhead-press": 25, "incline-press": 25,
+  "cable-pushdown": 60, "cable-lateral-raise": 20, "db-lateral-raise": 15,
+  "bicep-curl": 25, "incline-curl": 20, "overhead-extension": 50, "goblet-squat": 40,
+  "romanian-deadlift": 25, "walking-lunge": 20, "calf-raise": 20 };
+const SYNC_TOTALS = { xpTotal: 91, coins: 802, stack: 4, active: true, claimable: 0 };
+// Two completed gain weeks = 4 weight XP (artifact total). The week of
+// 2026-10-26 is still open, so it stays unpaid here.
+const SYNC_WEIGHT_XP_WEEKS = ["2026-10-12", "2026-10-19"];
+function syncArtifactSnapshot(state) {
+  const info = { guardPassed: false, addedSessions: [], addedWeights: [], addedFoodDays: [], addedOwned: [], skippedDates: [] };
+  if (!state || !state.targets || !Array.isArray(state.sessions)) return info;
+  const guard = state.xpTotal === 83 && state.coins === 1160 &&
+    !state.sessions.some((s) => s.date > "2026-10-14");
+  SYNC_SESSIONS.forEach((s) => {
+    if (findSession(state, s.date)) { info.skippedDates.push(s.date); return; }
+    state.sessions.push(JSON.parse(JSON.stringify(s)));
+    info.addedSessions.push(s.date);
+  });
+  SYNC_WEIGHTS.forEach((w) => {
+    if (state.weights.some((x) => x.date === w.date)) { info.skippedDates.push(w.date); return; }
+    state.weights.push({ date: w.date, weight: w.weight });
+    info.addedWeights.push(w.date);
+  });
+  state.weights.sort((a, b) => a.date.localeCompare(b.date));
+  Object.entries(SYNC_FOOD_DAYS).forEach(([date, day]) => {
+    if (state.foodDays[date]) { info.skippedDates.push(date); return; }
+    state.foodDays[date] = JSON.parse(JSON.stringify(day));
+    info.addedFoodDays.push(date);
+  });
+  if (!Array.isArray(state.owned)) state.owned = [];
+  SYNC_OWNED.forEach((id) => {
+    if (!state.owned.includes(id)) { state.owned.push(id); info.addedOwned.push(id); }
+  });
+  if (guard) {
+    state.xpTotal = SYNC_TOTALS.xpTotal;
+    state.coins = SYNC_TOTALS.coins;
+    state.doubleXp = { stack: SYNC_TOTALS.stack, active: SYNC_TOTALS.active, claimable: SYNC_TOTALS.claimable };
+    state.equipped = Object.assign({}, EMPTY_EQUIPPED, SYNC_EQUIPPED);
+    state.facialHair = "clean";
+    state.weightXpWeeks = SYNC_WEIGHT_XP_WEEKS.slice();
+    Object.entries(SYNC_TARGETS).forEach(([exId, weight]) => {
+      if (state.targets[exId]) state.targets[exId].weight = weight;
+    });
+    info.guardPassed = true;
+  }
+  return info;
+}
+
 /* ---------------- Seed state (verified values only) ---------------- */
 function seedState() {
   const targets = {};
   EXERCISES.forEach((e) => { targets[e.id] = { weight: e.weight, sets: e.sets, repMin: e.repMin, repMax: e.repMax }; });
+  Object.entries(SYNC_TARGETS).forEach(([exId, weight]) => { if (targets[exId]) targets[exId].weight = weight; });
   const lift = (weight, reps, extra) => Object.assign({ weight, reps, goalHit: false, xp: null, label: "Seeded" }, extra || {});
   return {
     version: 2,
     profile: { name: "Anthony", age: 31, height: "5'11\"", startWeight: 140, goalWeight: 165, creatine: 5 },
-    xpTotal: 83,
-    coins: 1160,
-    doubleXp: { stack: 2, active: true, claimable: 0 },
-    owned: [],
-    equipped: Object.assign({}, EMPTY_EQUIPPED),
-    facialHair: "beard",
+    xpTotal: 91,
+    coins: 802,
+    doubleXp: { stack: 4, active: true, claimable: 0 },
+    owned: SYNC_OWNED.slice(),
+    equipped: Object.assign({}, EMPTY_EQUIPPED, SYNC_EQUIPPED),
+    facialHair: "clean",
     pendingDuplicate: null,
     weights: [
       { date: "2026-09-22", weight: 140 },
-      { date: "2026-10-15", weight: 148.6 }
+      { date: "2026-10-15", weight: 148.6 },
+      ...SYNC_WEIGHTS.map((w) => ({ date: w.date, weight: w.weight }))
     ],
-    weightXpWeeks: [],
+    weightXpWeeks: SYNC_WEIGHT_XP_WEEKS.slice(),
     targets,
     sessions: [
       { date: "2026-10-08", dayId: "pull", doubled: null, lifts: {
@@ -145,7 +381,8 @@ function seedState() {
         "bench-press": lift(35, [12, 10, 10, 10]),
         "overhead-press": lift(20, [15, 12, 10]),
         "incline-press": lift(20, [12, 11, 15]),
-        "cable-pushdown": lift(50, [12, 12, 12]) } }
+        "cable-pushdown": lift(50, [12, 12, 12]) } },
+      ...JSON.parse(JSON.stringify(SYNC_SESSIONS))
     ],
     // Training week 12 (all four days) is recorded as completed without lift numbers.
     completedWeeks: ["2026-10-19"],
@@ -153,7 +390,8 @@ function seedState() {
       "2026-10-28": { entries: [
         { id: "seed1", name: "Taco Bell cheesy bean and rice burrito ×3", cal: 1260, protein: 39, time: "13:40" },
         { id: "seed2", name: "Taco Bell spicy potato soft taco ×2", cal: 460, protein: 14, time: "13:40" }
-      ], bonus: { protein: false, cal: false } }
+      ], bonus: { protein: false, cal: false } },
+      ...JSON.parse(JSON.stringify(SYNC_FOOD_DAYS))
     },
     muted: false
   };
@@ -635,12 +873,14 @@ function previewSvg(item) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { DAYS, EXERCISES, EX_BY_ID, CABLE_STACK, RANKS, dateKey, parseDate, fmtDate,
-    weekFor, levelForXp, rankForLevel, nextLoad, fmtWeight, totalReps, scoreLift, dayTotals,
+    weekFor, levelForXp, rankForLevel, rankInsigniaSvg, shelfDayIndex, shelfItems,
+    rotationInfo, boardCounts, nextLoad, fmtWeight, totalReps, scoreLift, dayTotals,
     weekKeyOf, seedState, findSession, prevLift, saveLiftToState, deleteLiftFromState,
     deleteSessionFromState, addFoodToState, removeFoodFromState, addWeightToState,
     claimDoubleToState, activateDoubleToState,
     SHOP_ITEMS, ITEM_BY_ID, EMPTY_EQUIPPED, CRATES, CRATE_BY_ID, scrapValue,
     resolveCrateReward, wcMult, wcBoosted, WC_MULT_END, migrateState,
+    syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS,
     buildCharacterSvg, previewSvg, slotFilter };
 }
 
@@ -653,6 +893,7 @@ if (typeof document !== "undefined") {
     state = raw ? JSON.parse(raw) : seedState();
     if (!state || !state.targets) state = seedState();
     else if (!migrateState(state)) state = seedState();
+    else syncArtifactSnapshot(state);
   } catch (e) { state = seedState(); }
   function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
 
@@ -699,14 +940,33 @@ if (typeof document !== "undefined") {
     }
   }
 
-  /* ----- Header / tabs ----- */
+  /* ----- Header / tabs: two rows on phones (week/coins/sound up top, the
+     centered rank/XP module with a short CLAIM 2x button below) ----- */
   function renderHeader() {
     const level = levelForXp(state.xpTotal);
     $("weekBadge").textContent = "Week " + weekFor(new Date());
-    $("xpChip").textContent = state.xpTotal + " XP · Lv " + level;
     $("coinsChip").textContent = "🪙 " + state.coins.toLocaleString();
     $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
+    $("rankMini").innerHTML = rankInsigniaSvg(level, 28);
+    $("rankName").textContent = "Lv " + level + " · " + rankForLevel(level);
+    const into = state.xpTotal - (level - 1) * XP_PER_LEVEL;
+    $("headXpMeter").style.width = Math.min(100, into / XP_PER_LEVEL * 100) + "%";
+    $("headXpText").textContent = state.xpTotal + " / " + XP_CAP + " XP";
+    const dx = state.doubleXp;
+    const hb = $("headClaimBtn");
+    hb.disabled = dx.claimable <= 0;
+    hb.classList.toggle("glow", dx.claimable > 0);
+    $("headStackCount").textContent = "Stacked ×" + dx.stack + (dx.active ? " · 2× ON" : "");
     $("sideXp").innerHTML = "Level " + level + " · " + esc(rankForLevel(level)) + "<br>" + state.xpTotal + " / " + XP_CAP + " XP<br>" + state.coins.toLocaleString() + " War Coins";
+  }
+  function doClaim(sourceEl) {
+    if (claimDoubleToState(state)) {
+      persist();
+      claimSting();
+      sparkBurst(sourceEl);
+      renderProgress(); renderHeader();
+      showBanner("2× XP charge claimed — banked. Activate it when your next session starts.");
+    }
   }
   function switchTab(tab) {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.id === "tab-" + tab));
@@ -800,7 +1060,10 @@ if (typeof document !== "undefined") {
       if (res.rolled !== null) html += ` · 🎯 Target rolled up to ${fmtWeight(ex, res.rolled)} — a 2× charge is banked, claim it in Progress.`;
       card.querySelector("[data-result]").innerHTML = "Saved: " + fmtWeight(ex, weight) + " × " + reps.join("/") + " — " + html;
       afterXp(res, null);
-      blip();
+      if (!res.leveledUp) {
+        if (res.scored.label === "Move-up" || res.rolled !== null) gunshotSound();
+        else blip();
+      }
       renderHeader();
     }));
   }
@@ -861,17 +1124,34 @@ if (typeof document !== "undefined") {
     const dx = state.doubleXp;
     $("doubleLine").innerHTML = "Stack: <b>" + dx.stack + " banked</b> · Active: " + (dx.active ? `<span class="badge active">ON — next session pays double</span>` : `<span class="badge closed">OFF</span>`) + " · Claimable: <b>" + dx.claimable + "</b>";
     $("claimBtn").disabled = dx.claimable <= 0;
+    $("claimBtn").classList.toggle("glow", dx.claimable > 0);
     $("activateBtn").disabled = dx.stack <= 0 || dx.active;
+    // Strength board: Progress / Held / Reset tallies from scored history.
+    const bc = boardCounts(state.sessions);
+    $("strengthBoard").innerHTML = `<div class="board-col"><b>${bc.progress}</b><span>Progress</span></div><div class="board-col"><b>${bc.held}</b><span>Held</span></div><div class="board-col"><b>${bc.reset}</b><span>Reset</span></div>`;
+    // Rank ladder: earned / current / locked states with per-level insignia.
+    $("ladderCurrent").textContent = "You are Level " + level + " · " + rankForLevel(level) + " — " + state.xpTotal + " XP.";
+    $("ladderBox").innerHTML = RANKS.map((name, i) => {
+      const lv = i + 1;
+      const st = lv < level ? "EARNED" : lv === level ? "CURRENT" : "LOCKED";
+      const lo = (lv - 1) * XP_PER_LEVEL, hi = lv === 20 ? XP_CAP : lv * XP_PER_LEVEL - 1;
+      return `<div class="ladder-row ${st.toLowerCase()}"><span class="ladder-ins">${rankInsigniaSvg(lv, 40)}</span><span class="ladder-lv">Lv ${lv}</span><b>${esc(name)}</b><span class="ladder-xp">${lo}–${hi} XP</span><span class="badge ${st === "CURRENT" ? "active" : st === "EARNED" ? "open" : "closed"}">${st}</span></div>`;
+    }).join("");
+    // Prestige vault: literal cuts from his CoD 5 reference sheet, all locked at prestige 0.
+    const ORD = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"];
+    $("prestigeLine").textContent = "Prestige 0 — you haven't prestiged yet. All ten emblems are locked; they light up as prestige is earned.";
+    $("vaultBox").innerHTML = `<div class="vault-grid">` + ORD.map((o, i) =>
+      `<div class="vault-item locked"><img src="./assets/prestige/prestige-${i + 1}.jpg" alt="${o} Prestige emblem" loading="lazy"><b>${o} Prestige</b><span class="badge closed">LOCKED</span></div>`).join("") + `</div><p class="muted">Emblems cut from your Call of Duty 5 prestige reference sheet. Private personal use only.</p>`;
     $("weightList").innerHTML = state.weights.map((w) => `<div class="food-entry"><span>${fmtDate(w.date)}</span><b>${w.weight} lbs</b></div>`).join("");
     const sorted = [...state.sessions].sort((a, b) => b.date.localeCompare(a.date));
     $("historyList").innerHTML = sorted.length === 0 ? `<p class="muted">No sessions yet.</p>` : sorted.map((s) => {
       const day = DAYS.find((d) => d.id === s.dayId);
       const lifts = Object.entries(s.lifts).map(([exId, l]) => {
         const ex = EX_BY_ID[exId];
-        const xpTxt = l.xp === null ? "seeded" : "+" + l.xp + " XP (" + esc(l.label) + ")";
+        const xpTxt = l.xp === null ? (l.label && l.label !== "Seeded" ? esc(l.label) + " (synced)" : "seeded") : "+" + l.xp + " XP (" + esc(l.label) + ")";
         return `<div class="lift-line"><span>${esc(ex.name)} — ${fmtWeight(ex, l.weight)} × ${l.reps.join("/")}${l.note ? " (" + esc(l.note) + ")" : ""}</span><span><span class="xp">${xpTxt}</span> <button class="small danger" data-del-lift="${s.date}:${exId}">Delete</button></span></div>`;
       }).join("");
-      return `<div class="sess"><div class="sess-head"><b>${fmtDate(s.date)} · ${day ? day.name : s.dayId}</b><span>${s.doubled === true ? `<span class="badge active">2× doubled</span> ` : ""}<button class="small secondary" data-copy="${s.date}">Copy as text</button> <button class="small danger" data-del-sess="${s.date}">Delete session</button></span></div>${lifts}</div>`;
+      return `<div class="sess"><div class="sess-head"><b>${fmtDate(s.date)} · ${day ? day.name : s.dayId}${typeof s.strengthXp === "number" ? " · " + s.strengthXp + " XP" : ""}</b><span>${s.doubled === true ? `<span class="badge active">2× doubled</span> ` : ""}<button class="small secondary" data-copy="${s.date}">Copy as text</button> <button class="small danger" data-del-sess="${s.date}">Delete session</button></span></div>${lifts}</div>`;
     }).join("");
     $("historyList").querySelectorAll("[data-del-lift]").forEach((b) => b.addEventListener("click", () => {
       const [d, exId] = b.dataset.delLift.split(":");
@@ -892,8 +1172,20 @@ if (typeof document !== "undefined") {
       else showBanner("Copy not available in this browser.");
     }));
   }
-  $("claimBtn").addEventListener("click", () => { if (claimDoubleToState(state)) { persist(); renderProgress(); blip(); } });
-  $("activateBtn").addEventListener("click", () => { if (activateDoubleToState(state)) { persist(); renderProgress(); blip(); showBanner("2× XP is ON — your next session pays double, then it switches off."); } });
+  $("claimBtn").addEventListener("click", () => doClaim($("claimBtn")));
+  $("headClaimBtn").addEventListener("click", () => doClaim($("headClaimBtn")));
+  $("activateBtn").addEventListener("click", () => { if (activateDoubleToState(state)) { persist(); renderProgress(); renderHeader(); blip(); showBanner("2× XP is ON — your next session pays double, then it switches off."); } });
+  $("ladderToggle").addEventListener("click", () => {
+    const b = $("ladderBox");
+    b.classList.toggle("open");
+    $("ladderToggle").textContent = b.classList.contains("open") ? "Hide ladder" : "Show ladder";
+  });
+  $("vaultToggle").addEventListener("click", () => {
+    const b = $("vaultBox");
+    b.classList.toggle("open");
+    $("vaultToggle").textContent = b.classList.contains("open") ? "Hide vault" : "Show vault";
+  });
+  $("stingerBtn").addEventListener("click", () => prestigeStinger());
   $("addWeightBtn").addEventListener("click", () => {
     const d = $("weightDate").value, w = parseFloat($("weightVal").value);
     if (!d || isNaN(w)) { alert("Enter a date and a weight."); return; }
@@ -966,6 +1258,52 @@ if (typeof document !== "undefined") {
     } catch (e) {}
   }
   function revealSound() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, "triangle", 0.08, i * 0.09)); }
+  function noiseBurst(delay, dur, freq, gain) {
+    if (state.muted) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audioCtx.currentTime + delay;
+      const len = Math.floor(audioCtx.sampleRate * dur), buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = audioCtx.createBufferSource(); src.buffer = buf;
+      const flt = audioCtx.createBiquadFilter(); flt.type = "bandpass"; flt.frequency.value = freq;
+      const g = audioCtx.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(flt); flt.connect(g); g.connect(audioCtx.destination); src.start(t);
+    } catch (e) {}
+  }
+  function claimSting() { // rising arpeggio + brass chord
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, "triangle", 0.09, i * 0.08));
+    [523, 659, 784].forEach((f) => tone(f, 0.6, "sawtooth", 0.03, 0.34));
+  }
+  function prestigeStinger() { // boom + chord
+    noiseBurst(0, 0.5, 180, 0.16);
+    tone(110, 0.5, "sine", 0.14, 0);
+    tone(55, 0.9, "sine", 0.12, 0.05);
+    [262, 330, 392, 523].forEach((f) => tone(f, 1.1, "triangle", 0.08, 0.3));
+  }
+  function gunshotSound() { // three sharp cracks for a target hit
+    [0, 0.16, 0.32].forEach((d) => { noiseBurst(d, 0.12, 1600, 0.12); tone(90, 0.1, "sine", 0.08, d); });
+  }
+  function sparkBurst(el) { // gold sparks flying out of a button
+    if (!el) return;
+    try {
+      const r = el.getBoundingClientRect();
+      const host = document.createElement("span");
+      host.className = "spark-host";
+      host.style.left = (r.left + r.width / 2) + "px";
+      host.style.top = (r.top + r.height / 2) + "px";
+      for (let i = 0; i < 10; i++) {
+        const s = document.createElement("span");
+        s.className = "spark";
+        const a = (Math.PI * 2 * i) / 10;
+        s.style.setProperty("--dx", Math.cos(a) * 34 + "px");
+        s.style.setProperty("--dy", Math.sin(a) * 26 + "px");
+        host.appendChild(s);
+      }
+      document.body.appendChild(host);
+      setTimeout(() => host.remove(), 800);
+    } catch (e) {}
+  }
   function cryptoRnd() {
     try {
       const a = new Uint32Array(1);
@@ -1010,8 +1348,18 @@ if (typeof document !== "undefined") {
     showBanner("Scrapped <b>" + esc(item ? item.name : "duplicate") + "</b> for <b>+" + pend.scrap + " War Coins</b>.");
   });
 
-  /* ----- Shop ----- */
-  let shopFilter = "all";
+  /* ----- Shop: depot console (drops + Armory/Collections/Ledger menu),
+     4-day rotating shelf (9 items a day), selectable crates ----- */
+  let shopFilter = "shelf";
+  let shopMenu = "armory";
+  let selectedCrate = "rare"; // Rare is lit green by default
+  function ledgerHtml() {
+    const today = dateKey(new Date());
+    const boost = today <= WC_MULT_END;
+    return `<p><b>Balance:</b> ${state.coins.toLocaleString()} War Coins · <b>Owned:</b> ${state.owned.length} items · <b>Stacked:</b> ×${state.doubleXp.stack}${state.doubleXp.active ? " · 2× ON" : ""}</p>`
+      + `<p>${boost ? "1.5× boost active through Nov 10 on weigh-ins, weekly gains, and fuel days." : "No boost active."}</p>`
+      + `<p class="muted">How coins are earned — session +10 · set +1 · every 5 reps +1 · move-up +20 · target hit +30 · protein day +20 · calorie day +20 · weigh-in +15 · weekly gain +30. Coins are never clawed back when a lift or session is deleted.</p>`;
+  }
   function crateSvg(crate) {
     const color = crate.id === "epic" ? "#c8a84a" : crate.id === "rare" ? "#7dd87d" : "#8a8f5c";
     return `<svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:74px;display:block"><rect x="14" y="18" width="92" height="48" fill="#3a3524" stroke="${color}" stroke-width="2.5"/><line x1="14" y1="32" x2="106" y2="32" stroke="${color}" stroke-width="1.5"/><line x1="14" y1="52" x2="106" y2="52" stroke="${color}" stroke-width="1.5"/><rect x="52" y="34" width="16" height="14" fill="none" stroke="${color}" stroke-width="2"/><text x="60" y="44" text-anchor="middle" font-size="9" fill="${color}" font-family="Arial, Helvetica, sans-serif" font-weight="bold">${crate.id === "epic" ? "EPIC" : crate.id === "rare" ? "RARE" : "SUPPLY"}</text></svg>`;
@@ -1019,29 +1367,53 @@ if (typeof document !== "undefined") {
   function renderShop() {
     $("shopCoins").textContent = state.coins.toLocaleString();
     $("shopOwned").textContent = state.owned.length + " owned";
+    $("shopStack").textContent = "Stacked ×" + state.doubleXp.stack + (state.doubleXp.active ? " · 2× ON" : "");
     const today = dateKey(new Date());
     $("shopBoost").textContent = today <= WC_MULT_END ? "1.5× BOOST ACTIVE through Nov 10 — weigh-ins, weekly gains, and fuel days pay 1.5× War Coins." : "";
     $("shopBoost").style.display = today <= WC_MULT_END ? "block" : "none";
+    // Next-rotation bar: the shelf rotates at midnight.
+    const ri = rotationInfo(new Date());
+    $("rotationFill").style.width = (ri.dayFrac * 100) + "%";
+    $("rotationText").textContent = "Shelf day " + (ri.idx + 1) + " of 4 · next rotation at midnight (" + Math.floor(ri.minsLeft / 60) + "h " + (ri.minsLeft % 60) + "m left).";
+    $("shelfTitle").textContent = shopFilter === "shelf" ? "ARMORY — SHELF DAY " + (ri.idx + 1) + " OF 4" : "ARMORY";
+    // Console menu.
+    const menus = [["armory", "Armory"], ["collections", "Collections"], ["ledger", "Ledger"]];
+    $("consoleMenu").innerHTML = menus.map(([m, label]) =>
+      `<button class="chip ${shopMenu === m ? "on" : ""}" data-menu="${m}">${label}</button>`).join("");
+    $("consoleMenu").querySelectorAll("[data-menu]").forEach((b) => b.addEventListener("click", () => {
+      shopMenu = b.dataset.menu;
+      if (shopMenu === "collections") shopFilter = "owned";
+      if (shopMenu === "armory") shopFilter = "shelf";
+      renderShop();
+    }));
+    $("ledgerPanel").innerHTML = shopMenu === "ledger" ? ledgerHtml() : "";
+    $("ledgerPanel").classList.toggle("open", shopMenu === "ledger");
     $("crateRow").innerHTML = CRATES.map((c) => {
       const blocked = !!state.pendingDuplicate;
       const afford = state.coins >= c.price;
-      return `<div class="crate-card ${blocked ? "blocked" : ""}" id="crate-${c.id}">
+      const sel = selectedCrate === c.id;
+      return `<div class="crate-card ${c.id === "rare" ? "rare-lit" : ""} ${sel ? "selected" : ""} ${blocked ? "blocked" : ""}" data-select-crate="${c.id}" id="crate-${c.id}">
         ${crateSvg(c)}
         <b>${esc(c.name)}</b>
-        <span class="muted">${c.price} WC · Gear ${(c.gear * 100).toFixed(0)}% · Coins ${(Math.round((1 - c.gear - c.token) * 100))}% · 2× Token ${(c.token * 100).toFixed(0)}%</span>
+        <span class="odds ${sel ? "green" : ""}">${c.price} WC · Gear ${(c.gear * 100).toFixed(0)}% · Coins ${(Math.round((1 - c.gear - c.token) * 100))}% · 2× Token ${(c.token * 100).toFixed(0)}%</span>
         <button data-crate="${c.id}" ${!afford && !blocked ? "disabled" : ""}>${blocked ? "Finish duplicate first" : afford ? "Open — " + c.price + " WC" : "Need " + c.price + " WC"}</button>
       </div>`;
     }).join("");
+    $("crateRow").querySelectorAll("[data-select-crate]").forEach((card) => card.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      selectedCrate = card.dataset.selectCrate;
+      renderShop();
+    }));
     $("crateRow").querySelectorAll("[data-crate]").forEach((b) => b.addEventListener("click", () => openCrate(b.dataset.crate)));
-    const filters = [["all", "All"], ["top", "Tops"], ["bottom", "Bottoms"], ["head", "Headwear"], ["gear", "Gear"], ["owned", "Owned"]];
+    const filters = [["shelf", "Today's shelf"], ["all", "Full armory"], ["top", "Tops"], ["bottom", "Bottoms"], ["head", "Headwear"], ["gear", "Gear"], ["owned", "Owned"]];
     $("shopFilters").innerHTML = filters.map(([f, label]) =>
       `<button class="chip ${shopFilter === f ? "on" : ""}" data-filter="${f}">${label}</button>`).join("");
     $("shopFilters").querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => { shopFilter = b.dataset.filter; renderShop(); }));
-    const items = SHOP_ITEMS.filter((it) => {
-      if (shopFilter === "all") return true;
-      if (shopFilter === "owned") return state.owned.includes(it.id);
-      return slotFilter(it.slot) === shopFilter;
-    });
+    let items;
+    if (shopFilter === "shelf") items = shelfItems(ri.idx);
+    else if (shopFilter === "owned") items = SHOP_ITEMS.filter((it) => state.owned.includes(it.id));
+    else if (shopFilter === "all") items = SHOP_ITEMS;
+    else items = SHOP_ITEMS.filter((it) => slotFilter(it.slot) === shopFilter);
     $("shopGrid").innerHTML = items.length === 0 ? `<p class="muted">Nothing here yet.</p>` : items.map((it) => {
       const owned = state.owned.includes(it.id);
       const equippedId = state.equipped[it.slot];

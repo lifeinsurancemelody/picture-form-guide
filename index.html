@@ -20,11 +20,18 @@
 <div class="depot-bg" aria-hidden="true"><div class="bg-haze h1"></div><div class="bg-haze h2"></div><div class="bg-beam"></div><div class="bg-embers"></div><div class="bg-vignette"></div></div>
 <div class="shop-bg" aria-hidden="true"><div class="bg-haze h1"></div><div class="bg-haze h2"></div><div class="bg-beam"></div><div class="bg-crates"></div></div>
 <header>
-  <div class="brand"><h1>Form Guide</h1><span class="depot-tag">DEPOT</span></div>
-  <span class="week-badge" id="weekBadge">Week —</span>
-  <span class="coins-chip" id="coinsChip">🪙 0</span>
-  <span class="xp-chip" id="xpChip">0 XP</span>
-  <button class="icon-btn" id="muteBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+  <div class="head-row1">
+    <div class="brand"><h1>Form Guide</h1><span class="depot-tag">DEPOT</span></div>
+    <span class="week-badge" id="weekBadge">Week —</span>
+    <span class="coins-chip" id="coinsChip">🪙 0</span>
+    <button class="icon-btn" id="muteBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+  </div>
+  <div class="head-row2">
+    <span class="rank-mini" id="rankMini" aria-hidden="true"></span>
+    <span class="rank-name" id="rankName">—</span>
+    <div class="head-xp"><div class="meter head-meter"><div id="headXpMeter" style="width:0%"></div></div><span id="headXpText"></span></div>
+    <button id="headClaimBtn" class="claim-btn">CLAIM 2×<span class="stack-count" id="headStackCount"></span></button>
+  </div>
 </header>
 
 <nav class="sidebar" aria-label="Main">
@@ -91,14 +98,26 @@
       <div class="depot-bal">
         <span class="bal-line">🪙 <b id="shopCoins">0</b> War Coins</span>
         <span class="bal-line muted" id="shopOwned">0 owned</span>
+        <span class="bal-line muted" id="shopStack"></span>
       </div>
     </div>
     <p class="muted" id="shopBoost" style="display:none"></p>
-    <h3 class="depot-sub">SUPPLY DROPS</h3>
-    <div class="crate-row" id="crateRow"></div>
-    <h3 class="depot-sub">ARMORY</h3>
-    <div class="chips" id="shopFilters"></div>
-    <div class="shop-grid" id="shopGrid"></div>
+    <div class="rotation-bar"><div id="rotationFill"></div></div>
+    <p class="muted" id="rotationText"></p>
+    <div class="shop-layout">
+      <aside class="shop-console">
+        <h3 class="depot-sub">SUPPLY DROPS</h3>
+        <div class="crate-row" id="crateRow"></div>
+        <h3 class="depot-sub">CONSOLE</h3>
+        <div class="chips" id="consoleMenu"></div>
+        <div class="collapse" id="ledgerPanel"></div>
+      </aside>
+      <div class="shop-main">
+        <h3 class="depot-sub" id="shelfTitle">ARMORY</h3>
+        <div class="chips" id="shopFilters"></div>
+        <div class="shop-grid" id="shopGrid"></div>
+      </div>
+    </div>
     <p class="muted">Collections: owned items live here and on your character. Tops are cut like the Saint Script jacket, bottoms like the baggy camo cargos, and garments carry only the verse reference at the hem — the full verse and its meaning are behind the ! button. Duplicate crate rewards never stack: they must be scrapped for War Coins before another crate can open.</p>
   </section>
 
@@ -139,6 +158,26 @@
       <p class="muted">Move-up (more weight, or more total reps at the same weight): +2 XP. Held (same weight, same total reps): +1 XP. Reset (fewer reps, or less weight): +0 XP. Doubled sessions pay twice.</p>
     </div>
 
+    <div class="card" id="boardCard">
+      <h2>Strength Board</h2>
+      <div class="board" id="strengthBoard"></div>
+      <p class="muted">Progress = move-ups, Held = same weight and reps, Reset = fewer reps or less weight. First-time lifts (no previous session to compare) aren't counted.</p>
+    </div>
+
+    <div class="card">
+      <h2>Rank Ladder</h2>
+      <p class="muted"><span id="ladderCurrent"></span> 20 levels, 200 XP cap.</p>
+      <p><button class="secondary" id="ladderToggle">Show ladder</button></p>
+      <div class="collapse" id="ladderBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>Prestige Vault</h2>
+      <p class="muted" id="prestigeLine"></p>
+      <p><button class="secondary" id="vaultToggle">Show vault</button> <button class="secondary" id="stingerBtn">Preview prestige stinger</button></p>
+      <div class="collapse" id="vaultBox"></div>
+    </div>
+
     <div class="card">
       <h2>Bodyweight</h2>
       <div id="weightList"></div>
@@ -168,7 +207,7 @@
     </div>
   </section>
 
-  <p class="footer-note">Private, personal use only. All calorie and protein figures are estimates. Stage 2: training + food + shop + character.</p>
+  <p class="footer-note">Private, personal use only. All calorie and protein figures are estimates. Refined shop, ranks, and prestige — training + food + shop + character.</p>
 </main>
 
 <!-- Unlock reveal -->

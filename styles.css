@@ -382,3 +382,92 @@ header {
 .form-row { display: flex; gap: 8px; }
 .form-row > * { flex: 1; }
 .footer-note { font-size: 12px; color: var(--dim); text-align: center; margin: 20px 0 6px; }
+
+/* ---------- Refined header: two rows (week/coins/sound, then centered rank/XP module) ---------- */
+header { flex-direction: column; align-items: stretch; }
+.head-row1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.head-row2 {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; margin-top: 8px; width: 100%;
+}
+.rank-mini { flex-shrink: 0; line-height: 0; }
+.rank-mini svg { height: 30px; width: auto; display: block; }
+.rank-name { font-size: 13px; font-weight: 800; color: var(--gold); white-space: nowrap; }
+.head-xp { flex: 1; max-width: 340px; min-width: 110px; }
+.head-meter { margin: 0 0 2px; }
+.head-xp span { font-size: 11px; color: var(--dim); white-space: nowrap; }
+.claim-btn { position: relative; padding: 6px 10px; font-size: 12px; line-height: 1.25; white-space: nowrap; }
+.claim-btn .stack-count { display: block; font-size: 10px; font-weight: 600; opacity: 0.85; }
+.claim-btn.glow, button.glow { animation: claimGlow 1.6s ease-in-out infinite; }
+.claim-btn:disabled { animation: none; }
+@keyframes claimGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(200, 168, 74, 0); }
+  50% { box-shadow: 0 0 16px rgba(200, 168, 74, 0.8); }
+}
+/* Claim spark burst */
+.spark-host { position: fixed; z-index: 200; pointer-events: none; }
+.spark {
+  position: absolute; width: 6px; height: 6px; margin: -3px;
+  background: var(--gold); border-radius: 50%;
+  animation: sparkFly 0.7s ease-out forwards;
+}
+@keyframes sparkFly { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+
+/* ---------- Collapsible boxes, strength board, ladder, vault ---------- */
+.collapse { display: none; }
+.collapse.open { display: block; }
+.board { display: flex; gap: 10px; }
+.board-col {
+  flex: 1; text-align: center;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 4px;
+}
+.board-col b { display: block; font-size: 26px; color: var(--gold); }
+.board-col span { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); }
+.ladder-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-top: 1px solid var(--line);
+}
+.ladder-row:first-child { border-top: 0; }
+.ladder-ins { width: 44px; flex-shrink: 0; line-height: 0; }
+.ladder-ins svg { width: 44px; height: auto; display: block; }
+.ladder-row.locked { opacity: 0.55; }
+.ladder-row.locked .ladder-ins { filter: grayscale(1); }
+.ladder-lv { font-size: 12px; color: var(--dim); white-space: nowrap; }
+.ladder-row b { flex: 1; font-size: 14px; }
+.ladder-xp { font-size: 12px; color: var(--dim); white-space: nowrap; }
+.vault-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.vault-item {
+  text-align: center; border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px; background: rgba(0, 0, 0, 0.3);
+}
+.vault-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: #000; }
+.vault-item.locked img { filter: grayscale(0.6) brightness(0.75); }
+.vault-item b { display: block; font-size: 12px; margin: 6px 0 4px; }
+@media (min-width: 600px) {
+  .vault-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+/* ---------- Shop console layout + rotation bar + selected crate ---------- */
+.rotation-bar { height: 8px; background: var(--panel2); border-radius: 999px; overflow: hidden; margin: 8px 0 4px; }
+.rotation-bar > div { height: 100%; background: var(--green); border-radius: 999px; }
+.shop-layout { display: block; }
+.shop-console .collapse { margin-top: 10px; font-size: 14px; }
+.crate-card.selected { border-color: var(--green); box-shadow: 0 0 14px rgba(125, 216, 125, 0.35); }
+.crate-card.rare-lit { border-color: rgba(125, 216, 125, 0.65); }
+.odds { font-size: 11px; color: var(--dim); }
+.odds.green { color: var(--green); font-weight: 700; }
+@media (min-width: 900px) {
+  .shop-layout { display: flex; gap: 14px; align-items: flex-start; }
+  .shop-console { width: 240px; flex-shrink: 0; position: sticky; top: 124px; }
+  .shop-main { flex: 1; min-width: 0; }
+  .shop-console .crate-row { flex-direction: column; }
+}
+
+/* Taller two-row header: jump chips and scrolled-to cards sit below it. */
+.chips.sticky { top: 116px; }
+.ex-card { scroll-margin-top: 170px; }
+@media (max-width: 400px) {
+  .chips.sticky { top: 160px; }
+  .ex-card { scroll-margin-top: 210px; }
+}
