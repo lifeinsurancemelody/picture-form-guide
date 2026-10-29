@@ -272,7 +272,7 @@ header {
   padding: 10px;
   display: flex; flex-direction: column; gap: 6px;
 }
-.crate-card b { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+.crate-card b { font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
 .crate-card .muted { font-size: 11px; }
 .crate-card button { width: 100%; padding: 9px 6px; font-size: 12px; }
 .crate-card.blocked { opacity: 0.75; }
@@ -463,6 +463,8 @@ header { flex-direction: column; align-items: stretch; }
 .shop-console .collapse { margin-top: 10px; font-size: 14px; }
 .crate-card.selected { border-color: var(--green); box-shadow: 0 0 14px rgba(125, 216, 125, 0.35); }
 .crate-card.rare-lit { border-color: rgba(125, 216, 125, 0.65); }
+.crate-card.epic-lit { border-color: rgba(200, 168, 74, 0.7); box-shadow: 0 0 16px rgba(200, 168, 74, 0.35); }
+.crate-card.supply-lit { border-color: rgba(138, 143, 92, 0.6); }
 .odds { font-size: 11px; color: var(--dim); }
 .odds.green { color: var(--green); font-weight: 700; }
 @media (min-width: 900px) {
@@ -677,6 +679,8 @@ body.shop-active .shop-console .chips button { width: 100%; text-align: left; ba
 body.shop-active .shop-console .chips button:hover { border-color: rgba(125, 216, 125, 0.5); }
 body.shop-active .crate-card { background: linear-gradient(180deg, rgba(22, 28, 18, 0.42), rgba(12, 16, 10, 0.55)); }
 body.shop-active .crate-card.rare-lit { border-color: rgba(125, 216, 125, 0.8); box-shadow: 0 0 18px rgba(125, 216, 125, 0.45), inset 0 0 12px rgba(125, 216, 125, 0.15); }
+body.shop-active .crate-card.epic-lit { border-color: rgba(200, 168, 74, 0.85); box-shadow: 0 0 18px rgba(200, 168, 74, 0.45), inset 0 0 12px rgba(200, 168, 74, 0.15); }
+body.shop-active .crate-card.supply-lit { border-color: rgba(138, 143, 92, 0.7); }
 @media (prefers-reduced-motion: reduce) {
   .shop-scene-wrap, .shop-scene-glow, .shop-dust, .shop-scene-type { animation: none !important; }
   .shop-scene-type { opacity: 0 !important; }

@@ -815,9 +815,9 @@ function slotFilter(slot) {
    double-XP token. Gear is drawn from the whole catalog — owned items become
    duplicates and are handled by the blocking scrap flow, never stacked. */
 const CRATES = [
-  { id: "supply", name: "Supply Drop", price: 100, gear: 0.50, coinMin: 50, coinMax: 150, token: 0.20 },
-  { id: "rare", name: "Rare Supply Drop", price: 250, gear: 0.60, coinMin: 100, coinMax: 300, token: 0.15 },
-  { id: "epic", name: "Epic Supply Drop", price: 500, gear: 0.70, coinMin: 200, coinMax: 500, token: 0.10 }
+  { id: "supply", name: "Supply Drop", price: 100, gear: 0.65, coinMin: 50, coinMax: 150, token: 0.15 },
+  { id: "rare", name: "Rare Supply Drop", price: 250, gear: 0.75, coinMin: 100, coinMax: 300, token: 0.10 },
+  { id: "epic", name: "Epic Supply Drop", price: 500, gear: 0.85, coinMin: 200, coinMax: 500, token: 0.05 }
 ];
 const CRATE_BY_ID = Object.fromEntries(CRATES.map((c) => [c.id, c]));
 function scrapValue(item) { return Math.max(10, Math.floor(item.price / 2)); }
@@ -908,13 +908,35 @@ function wordFont(style) {
    Tier: full-kit if a jacket, bandolier, pouch, cap, goggles, or tall boots
    are equipped; otherwise base. Slot photos override the tier photo for
    clean-shaven faces only — moustache + slot combos fall back to the core
-   moustache tier photo (no moustache slot photos exist). Clean-face
-   precedence: Saint jacket > dogtags+bible loadout > dogtags > bible >
-   tier. Tees/tanks/shorts, other headgear (pith, beret, beanie), aviators,
-   cross, dumbbells, towel, shaker, socks, and bottoms never change the
-   photo. Night (variant "night" or "figure-night") is a CSS filter, not a
-   separate photo. Mass uses the same formula as before, as a CSS scale. */
+   moustache tier photo (no moustache worn photos exist). Clean-face
+   precedence: Saint jacket > worn top > worn bottom > worn head > worn
+   eyes > dogtags+bible loadout > dogtags > bible > tier. Worn photos are
+   one generated photo per wearable item, loaded network-first (never
+   precached) with the tier photo shown while loading and on error, so a
+   missing worn photo never leaves a broken image. Cross, dumbbells,
+   towel, shaker, and socks have no worn photo — the equipped list still
+   tracks them. Night (variant "night" or "figure-night") is a CSS filter,
+   not a separate photo. Mass uses the same formula as before, as a CSS
+   scale. */
 const CHAR_PHOTO_DIR = "assets/character/";
+/* Worn-photo map: item id -> file in assets/character/. Saint jacket keeps
+   its own earlier photo (base-saint-jacket.webp) and is not listed here. */
+const WORN_PHOTO = {
+  "faith-tee": "worn-faith-tee.webp", "fearnot-tee": "worn-fearnot-tee.webp",
+  "strength-cover": "worn-strength-cover.webp", "shepherd-anorak": "worn-shepherd-anorak.webp",
+  "bestill-tee": "worn-bestill-tee.webp", "armor-tee": "worn-armor-tee.webp",
+  "eagles-tee": "worn-eagles-tee.webp", "courage-crew": "worn-courage-crew.webp",
+  "run-tank": "worn-run-tank.webp", "shield-stringer": "worn-shield-stringer.webp",
+  "heartily-tee": "worn-heartily-tee.webp", "endure-hoodie": "worn-endure-hoodie.webp",
+  "purpose-pullover": "worn-purpose-pullover.webp", "nightops-tank": "worn-nightops-tank.webp",
+  "hoodie-camo-verse": "worn-hoodie-camo-verse.webp",
+  "woodland-cargos": "worn-woodland-cargos.webp", "duck-cargos": "worn-duck-cargos.webp",
+  "olive-cargos": "worn-olive-cargos.webp", "black-cargos": "worn-black-cargos.webp",
+  "desert-cargos": "worn-desert-cargos.webp", "joggers-charcoal": "worn-joggers-charcoal.webp",
+  "pith-helmet": "worn-pith-helmet.webp", "beret": "worn-beret.webp",
+  "aviator-cap": "worn-aviator-cap.webp", "beanie": "worn-beanie.webp",
+  "aviators": "worn-aviators.webp"
+};
 function charTier(equipped) {
   const ids = new Set(Object.values(equipped || {}).filter(Boolean));
   const top = equipped && equipped.top ? ITEM_BY_ID[equipped.top] : null;
@@ -928,16 +950,24 @@ function charImageFor(equipped, facialHair, variant) {
   const tier = charTier(eq);
   const moustache = facialHair === "moustache";
   const tierSrc = CHAR_PHOTO_DIR + (moustache ? tier + "-moustache" : tier) + ".webp";
-  let src = tierSrc, fallback = null;
+  let src = tierSrc, fallback = null, worn = null;
   if (!moustache) {
     const hasDogtags = eq.neck === "dogtags" || eq.neck === "dogtag-micah";
     const hasBible = eq.hand === "bible";
+    const wornTop = eq.top && WORN_PHOTO[eq.top] ? CHAR_PHOTO_DIR + WORN_PHOTO[eq.top] : null;
+    const wornBottom = eq.bottom && WORN_PHOTO[eq.bottom] ? CHAR_PHOTO_DIR + WORN_PHOTO[eq.bottom] : null;
+    const wornHead = eq.head && WORN_PHOTO[eq.head] ? CHAR_PHOTO_DIR + WORN_PHOTO[eq.head] : null;
+    const wornEyes = eq.eyes && WORN_PHOTO[eq.eyes] ? CHAR_PHOTO_DIR + WORN_PHOTO[eq.eyes] : null;
     if (eq.top === "saint-jacket") { src = CHAR_PHOTO_DIR + "base-saint-jacket.webp"; fallback = tierSrc; }
+    else if (wornTop) { src = wornTop; fallback = tierSrc; worn = wornTop; }
+    else if (wornBottom) { src = wornBottom; fallback = tierSrc; worn = wornBottom; }
+    else if (wornHead) { src = wornHead; fallback = tierSrc; worn = wornHead; }
+    else if (wornEyes) { src = wornEyes; fallback = tierSrc; worn = wornEyes; }
     else if (hasDogtags && hasBible) { src = CHAR_PHOTO_DIR + "base-loadout.webp"; fallback = tierSrc; }
     else if (hasDogtags) { src = CHAR_PHOTO_DIR + "base-dogtags.webp"; fallback = tierSrc; }
     else if (hasBible) { src = CHAR_PHOTO_DIR + "base-bible.webp"; fallback = tierSrc; }
   }
-  return { src, fallback, night };
+  return { src, fallback, night, worn };
 }
 function charBulk(weight) {
   return 1 + Math.min(0.16, Math.max(-0.06, (weight - 140) * 0.008));
@@ -1260,7 +1290,8 @@ function previewSvg(item) {
       : `<path d="M26,24 L36,24 L34,98 L30,98 Z" fill="#fff" opacity="0.14"/>`;
     const sleeves = item.cut === "tank" ? "" :
       `<path d="M18,28 L30,28 L28,58 L18,58 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/><path d="M90,28 L102,28 L102,58 L92,58 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2"/>` +
-      `<line x1="18" y1="38" x2="28" y2="38" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="92" y1="38" x2="102" y2="38" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`;
+      `<line x1="18" y1="38" x2="28" y2="38" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="92" y1="38" x2="102" y2="38" stroke="${OUT}" stroke-width="1" opacity="0.5"/>` +
+      `<rect x="18" y="52" width="10" height="6" fill="${item.dark}" stroke="${OUT}" stroke-width="1"/><rect x="92" y="52" width="10" height="6" fill="${item.dark}" stroke="${OUT}" stroke-width="1"/><path d="M30,26 L36,34 M90,26 L84,34" stroke="${OUT}" stroke-width="1" opacity="0.6"/>`;
     const collar = `<path d="M50,24 Q60,34 70,24" fill="none" stroke="${OUT}" stroke-width="2"/>`;
     let cut = "";
     if (item.cut === "jacket") {
@@ -1282,38 +1313,40 @@ function previewSvg(item) {
     } else {
       cut = `<path d="M30,92 L90,92" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/>`;
     }
-    const camo = item.camo ? [0, 1, 2, 3, 4, 5].map((i) =>
-      `<ellipse cx="${36 + i * 13}" cy="${48 + (i % 2) * 24}" rx="12" ry="8" fill="${CAMO_BLOBS[item.camo][i % 3]}" opacity="0.85"/>`).join("") : "";
-    const word = item.word ? `<text x="60" y="66" text-anchor="middle" font-size="${item.wordStyle === "script" ? 13 : 10}" fill="${item.accent}" ${wordFont(item.wordStyle)}>${escXml(item.word)}</text>` : "";
+    const camo = item.camo ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) =>
+      `<ellipse cx="${30 + (i % 6) * 13}" cy="${40 + Math.floor(i / 6) * 34 + (i % 2) * 8}" rx="13" ry="9" fill="${CAMO_BLOBS[item.camo][i % 3]}" opacity="0.9"/>`).join("") : "";
+    const camoSleeve = item.camo && item.cut !== "tank" ? `<ellipse cx="23" cy="44" rx="7" ry="6" fill="${CAMO_BLOBS[item.camo][0]}" opacity="0.9"/><ellipse cx="97" cy="44" rx="7" ry="6" fill="${CAMO_BLOBS[item.camo][1]}" opacity="0.9"/>` : "";
+    const word = item.word ? `<text x="60" y="66" text-anchor="middle" font-size="${item.wordStyle === "script" ? 15 : 11}" fill="${item.accent}" ${wordFont(item.wordStyle)}>${escXml(item.word)}</text>` : "";
+    const wordBar = item.word ? `<rect x="42" y="70" width="36" height="2.5" fill="${item.accent}" opacity="0.85"/>` : "";
     const ref = item.verseRef ? `<text x="60" y="96" text-anchor="middle" font-size="5" fill="${item.accent}" font-family="Arial, Helvetica, sans-serif">${escXml(item.verseRef)}</text>` : "";
     const hemTag = `<rect x="${item.cut === "tank" ? 72 : 80}" y="86" width="9" height="7" fill="${item.accent}" stroke="${OUT}" stroke-width="1"/>`;
-    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${body}${shade}${light}${camo}${sleeves}${collar}${cut}${word}${ref}${hemTag}</svg>`;
+    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><defs><clipPath id="clip-top-${item.id}"><path d="${item.cut === "tank" ? "M36,24 L84,24 L82,98 L38,98 Z" : "M26,24 L94,24 L90,98 L30,98 Z"}"/></clipPath></defs>${body}${shade}${light}<g clip-path="url(#clip-top-${item.id})">${camo}</g>${camoSleeve}${sleeves}${collar}${cut}${word}${wordBar}${ref}${hemTag}</svg>`;
   }
   if (item.slot === "bottom") {
     if (item.id === "joggers-charcoal") {
-      return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="34" y="16" width="52" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><path d="M34,26 L58,26 L54,92 L38,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M62,26 L86,26 L82,92 L66,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M52,26 L54,92 L50,92 L48,26 Z" fill="#000" opacity="0.10"/><line x1="38" y1="30" x2="38" y2="82" stroke="${item.accent}" stroke-width="2" opacity="0.55"/><rect x="36" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/></svg>`;
+      return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="34" y="16" width="52" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><path d="M34,26 L58,26 L54,92 L38,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M62,26 L86,26 L82,92 L66,92 Z" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M52,26 L54,92 L50,92 L48,26 Z" fill="#000" opacity="0.10"/><line x1="38" y1="30" x2="38" y2="82" stroke="${item.accent}" stroke-width="2" opacity="0.55"/><rect x="36" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="84" width="18" height="8" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="38" y1="30" x2="38" y2="82" stroke="${item.accent}" stroke-width="2" opacity="0.55"/><path d="M56,26 L54,40 M64,26 L66,40" stroke="${item.accent}" stroke-width="1.5"/></svg>`;
     }
-    const blobs = item.camo ? [0, 1, 2, 3, 4, 5].map((i) => `<ellipse cx="${34 + i * 13}" cy="${42 + (i % 2) * 26}" rx="12" ry="8" fill="${CAMO_BLOBS[item.camo][i % 3]}" opacity="0.85"/>`).join("") : "";
-    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><rect x="26" y="16" width="68" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><line x1="40" y1="16" x2="40" y2="26" stroke="${OUT}" stroke-width="1.5"/><line x1="80" y1="16" x2="80" y2="26" stroke="${OUT}" stroke-width="1.5"/><path d="M58,26 L56,36 M62,26 L64,36" stroke="${item.dark}" stroke-width="1.5"/><rect x="26" y="26" width="34" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="26" width="34" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M56,26 L60,100 L54,100 L50,26 Z" fill="#000" opacity="0.10"/><path d="M30,26 L36,26 L34,100 L26,100 Z" fill="#fff" opacity="0.12"/>${blobs}<rect x="30" y="44" width="22" height="26" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="30" y1="53" x2="52" y2="53" stroke="${OUT}" stroke-width="1.5"/><rect x="66" y="44" width="22" height="26" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="66" y1="53" x2="88" y2="53" stroke="${OUT}" stroke-width="1.5"/><line x1="29" y1="30" x2="29" y2="96" stroke="${item.accent}" stroke-width="2" opacity="0.55"/><path d="M26,100 q8.5,5 17,0 t17,0 M60,100 q8.5,5 17,0 t17,0" fill="none" stroke="${OUT}" stroke-width="2"/></svg>`;
+    const blobs = item.camo ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => `<ellipse cx="${30 + (i % 6) * 12}" cy="${36 + Math.floor(i / 6) * 34 + (i % 2) * 8}" rx="13" ry="9" fill="${CAMO_BLOBS[item.camo][i % 3]}" opacity="0.9"/>`).join("") : "";
+    return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block"><defs><clipPath id="clip-bot-${item.id}"><rect x="26" y="26" width="34" height="74"/><rect x="60" y="26" width="34" height="74"/></clipPath></defs><rect x="26" y="16" width="68" height="10" fill="${item.dark}" stroke="${OUT}" stroke-width="2"/><line x1="40" y1="16" x2="40" y2="26" stroke="${OUT}" stroke-width="1.5"/><line x1="80" y1="16" x2="80" y2="26" stroke="${OUT}" stroke-width="1.5"/><path d="M58,26 L55,44 M62,26 L65,44" stroke="${item.dark}" stroke-width="1.5"/><circle cx="55" cy="45" r="1.6" fill="${item.dark}"/><circle cx="65" cy="45" r="1.6" fill="${item.dark}"/><rect x="26" y="26" width="34" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="26" width="34" height="74" fill="${item.main}" stroke="${OUT}" stroke-width="2.5"/><path d="M56,26 L60,100 L54,100 L50,26 Z" fill="#000" opacity="0.10"/><path d="M30,26 L36,26 L34,100 L26,100 Z" fill="#fff" opacity="0.12"/><g clip-path="url(#clip-bot-${item.id})">${blobs}</g><rect x="28" y="42" width="26" height="32" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="28" y1="52" x2="54" y2="52" stroke="${OUT}" stroke-width="1.5"/><circle cx="41" cy="47" r="1.8" fill="${OUT}"/><rect x="66" y="42" width="26" height="32" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="66" y1="52" x2="92" y2="52" stroke="${OUT}" stroke-width="1.5"/><circle cx="79" cy="47" r="1.8" fill="${OUT}"/><rect x="20" y="58" width="8" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><rect x="92" y="58" width="8" height="22" fill="${item.dark}" stroke="${OUT}" stroke-width="1.5"/><line x1="29" y1="30" x2="29" y2="96" stroke="${item.accent}" stroke-width="3" opacity="0.55"/><line x1="91" y1="30" x2="91" y2="96" stroke="${item.accent}" stroke-width="3" opacity="0.55"/><path d="M26,100 q8.5,5 17,0 t17,0 M60,100 q8.5,5 17,0 t17,0" fill="none" stroke="${OUT}" stroke-width="2"/></svg>`;
   }
   const g = {
-    dogtags: `<path d="M40,20 Q60,50 80,20" fill="none" stroke="#888" stroke-width="1.5"/><rect x="50" y="48" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="54" y1="52" x2="54" y2="64" stroke="#c8a84a" stroke-width="1" opacity="0.7"/><rect x="66" y="56" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="70" y1="60" x2="70" y2="72" stroke="#c8a84a" stroke-width="1" opacity="0.7"/>`,
-    pouch: `<rect x="36" y="40" width="48" height="44" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="52" x2="84" y2="52" stroke="${OUT}" stroke-width="2"/><path d="M60,62 v12 M54,68 h12" stroke="#c8a84a" stroke-width="2.5"/><rect x="36" y="40" width="48" height="4" fill="#000" opacity="0.15"/>`,
-    aviators: `<circle cx="44" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><circle cx="76" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><line x1="58" y1="56" x2="62" y2="56" stroke="#c8a84a" stroke-width="2.5"/><path d="M38,52 l7,-5 M70,52 l7,-5" stroke="#fff" stroke-width="1.5" opacity="0.5"/>`,
-    goggles: `<line x1="28" y1="56" x2="92" y2="56" stroke="#3a2f1c" stroke-width="4"/><circle cx="44" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><circle cx="76" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><path d="M38,48 q6,-4 12,0 M70,48 q6,-4 12,0" stroke="#fff" stroke-width="1.5" opacity="0.6" fill="none"/>`,
-    pith: `<ellipse cx="60" cy="48" rx="26" ry="13" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><ellipse cx="60" cy="60" rx="40" ry="9" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="48" x2="84" y2="48" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/><circle cx="60" cy="40" r="2.5" fill="${OUT}"/>`,
-    beret: `<g transform="rotate(-8 60 56)"><ellipse cx="60" cy="56" rx="32" ry="12" fill="#1c2438" stroke="${OUT}" stroke-width="2.5"/></g><path d="M86,48 l10,-4 l-3,6 l8,1 l-11,3 z" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/><path d="M34,58 Q60,50 86,58" fill="none" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`,
-    cap: `<path d="M30,60 Q32,28 60,26 Q88,28 90,60 L80,60 Q80,38 60,36 Q40,38 40,60 Z" fill="#4a3220" stroke="${OUT}" stroke-width="2.5"/><rect x="28" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><rect x="82" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><path d="M40,40 Q60,32 80,40" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`,
-    beanie: `<path d="M30,66 Q32,28 60,26 Q88,28 90,66 Q75,54 60,54 Q45,54 30,66 Z" fill="#3a3f2a" stroke="${OUT}" stroke-width="2.5"/><line x1="40" y1="52" x2="40" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="52" y1="50" x2="52" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="64" y1="50" x2="64" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="76" y1="52" x2="76" y2="62" stroke="${OUT}" stroke-width="1.5"/>`,
-    socks: `<rect x="44" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="36" x2="60" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="66" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="66" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="66" y1="36" x2="82" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="44" y="70" width="8" height="12" fill="#000" opacity="0.12"/><rect x="66" y="70" width="8" height="12" fill="#000" opacity="0.12"/>`,
-    towel: `<path d="M36,26 L52,96 L76,92 L62,22 Z" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="52" x2="66" y2="50" stroke="#7a7d4f" stroke-width="4"/><line x1="48" y1="70" x2="70" y2="68" stroke="#7a7d4f" stroke-width="4"/><path d="M52,96 l-2,6 M58,95 l-2,6 M64,94 l-2,6" stroke="${OUT}" stroke-width="1.5"/>`,
-    shaker: `<rect x="48" y="36" width="24" height="48" rx="4" fill="#b8bcc0" stroke="${OUT}" stroke-width="2.5"/><rect x="54" y="28" width="12" height="10" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><line x1="48" y1="60" x2="72" y2="60" stroke="#c8a84a" stroke-width="3"/><line x1="48" y1="48" x2="72" y2="48" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="48" y1="70" x2="72" y2="70" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`,
-    boots: `<rect x="40" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="36" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><rect x="64" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><path d="M44,36 L56,44 M56,36 L44,44 M44,52 L56,60 M56,52 L44,60 M68,36 L80,44 M80,36 L68,44 M68,52 L80,60 M80,52 L68,60" stroke="#8a7a5c" stroke-width="1.5"/><path d="M40,78 Q50,72 60,78 M64,78 Q74,72 84,78" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`,
-    bandolier: `<g transform="rotate(38 60 60)"><rect x="16" y="52" width="88" height="14" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>${[22, 34, 46, 58, 70, 82, 94].map((x) => `<rect x="${x}" y="50" width="5" height="18" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`).join("")}</g><line x1="20" y1="52" x2="100" y2="52" stroke="#000" stroke-width="1" opacity="0.25"/>`,
-    cross: `<rect x="55" y="18" width="10" height="84" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="38" y="42" width="44" height="10" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><line x1="58" y1="22" x2="58" y2="98" stroke="${OUT}" stroke-width="1" opacity="0.4"/><line x1="42" y1="45" x2="78" y2="45" stroke="${OUT}" stroke-width="1" opacity="0.4"/>`,
-    bible: `<rect x="40" y="28" width="40" height="64" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="47" y1="32" x2="47" y2="88" stroke="#c8a84a" stroke-width="1.5"/><line x1="74" y1="32" x2="74" y2="88" stroke="#c9b98f" stroke-width="1.5" opacity="0.7"/><path d="M60,44 v20 M52,52 h16" stroke="#c8a84a" stroke-width="2.5"/><line x1="40" y1="84" x2="80" y2="84" stroke="${OUT}" stroke-width="1" opacity="0.5"/>`,
-    dumbbells: `<rect x="14" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="8" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="54" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="58" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="98" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="52" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><line x1="14" y1="59" x2="54" y2="59" stroke="#000" stroke-width="1" opacity="0.4"/><line x1="58" y1="59" x2="98" y2="59" stroke="#000" stroke-width="1" opacity="0.4"/>`,
-    "figure-night": `<circle cx="60" cy="32" r="14" fill="#e8b98a" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="48" width="32" height="46" fill="#23241f" stroke="${OUT}" stroke-width="2.5"/><rect x="48" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><rect x="62" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><path d="M44,56 L76,56" stroke="#000" stroke-width="1.5" opacity="0.4"/><circle cx="60" cy="30" r="3" fill="#1a1a1a"/>`
+    dogtags: `<path d="M40,20 Q60,50 80,20" fill="none" stroke="#888" stroke-width="1.5"/><circle cx="48" cy="30" r="2" fill="none" stroke="#888" stroke-width="1"/><circle cx="60" cy="38" r="2" fill="none" stroke="#888" stroke-width="1"/><circle cx="72" cy="30" r="2" fill="none" stroke="#888" stroke-width="1"/><rect x="50" y="48" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="54" y1="52" x2="54" y2="64" stroke="#c8a84a" stroke-width="1" opacity="0.7"/><rect x="66" y="56" width="14" height="20" rx="3" fill="#1c1c1c" stroke="#c8a84a" stroke-width="1.5"/><line x1="70" y1="60" x2="70" y2="72" stroke="#c8a84a" stroke-width="1" opacity="0.7"/>`,
+    pouch: `<rect x="36" y="40" width="48" height="44" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="52" x2="84" y2="52" stroke="${OUT}" stroke-width="2"/><path d="M60,62 v12 M54,68 h12" stroke="#c8a84a" stroke-width="2.5"/><rect x="36" y="40" width="48" height="4" fill="#000" opacity="0.15"/><rect x="54" y="58" width="12" height="8" fill="none" stroke="#c8a84a" stroke-width="1.5"/>`,
+    aviators: `<circle cx="44" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><circle cx="76" cy="58" r="14" fill="#1a1a1a" stroke="#c8a84a" stroke-width="2.5"/><line x1="58" y1="56" x2="62" y2="56" stroke="#c8a84a" stroke-width="2.5"/><path d="M38,52 l7,-5 M70,52 l7,-5" stroke="#fff" stroke-width="1.5" opacity="0.5"/><path d="M30,58 L22,50 M90,58 L98,50" stroke="#c8a84a" stroke-width="2"/>`,
+    goggles: `<line x1="28" y1="56" x2="92" y2="56" stroke="#3a2f1c" stroke-width="4"/><circle cx="44" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><circle cx="76" cy="56" r="15" fill="#9fc4d8" opacity="0.7" stroke="#c8a84a" stroke-width="3"/><path d="M38,48 q6,-4 12,0 M70,48 q6,-4 12,0" stroke="#fff" stroke-width="1.5" opacity="0.6" fill="none"/><line x1="28" y1="56" x2="14" y2="56" stroke="#3a2f1c" stroke-width="4"/><line x1="92" y1="56" x2="106" y2="56" stroke="#3a2f1c" stroke-width="4"/>`,
+    pith: `<ellipse cx="60" cy="48" rx="26" ry="13" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><ellipse cx="60" cy="60" rx="40" ry="9" fill="#c8b98a" stroke="${OUT}" stroke-width="2.5"/><line x1="36" y1="48" x2="84" y2="48" stroke="${OUT}" stroke-width="1.5" opacity="0.5"/><circle cx="60" cy="40" r="2.5" fill="${OUT}"/><path d="M30,62 Q60,78 90,62" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/>`,
+    beret: `<g transform="rotate(-8 60 56)"><ellipse cx="60" cy="56" rx="32" ry="12" fill="#1c2438" stroke="${OUT}" stroke-width="2.5"/></g><path d="M86,48 l10,-4 l-3,6 l8,1 l-11,3 z" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/><path d="M34,58 Q60,50 86,58" fill="none" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="60" y1="44" x2="60" y2="40" stroke="${OUT}" stroke-width="2"/>`,
+    cap: `<path d="M30,60 Q32,28 60,26 Q88,28 90,60 L80,60 Q80,38 60,36 Q40,38 40,60 Z" fill="#4a3220" stroke="${OUT}" stroke-width="2.5"/><rect x="28" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><rect x="82" y="58" width="10" height="26" fill="#4a3220" stroke="${OUT}" stroke-width="2"/><path d="M40,40 Q60,32 80,40" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/><circle cx="60" cy="27" r="2.5" fill="${OUT}"/>`,
+    beanie: `<path d="M30,66 Q32,28 60,26 Q88,28 90,66 Q75,54 60,54 Q45,54 30,66 Z" fill="#3a3f2a" stroke="${OUT}" stroke-width="2.5"/><line x1="40" y1="52" x2="40" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="52" y1="50" x2="52" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="64" y1="50" x2="64" y2="62" stroke="${OUT}" stroke-width="1.5"/><line x1="76" y1="52" x2="76" y2="62" stroke="${OUT}" stroke-width="1.5"/><rect x="32" y="58" width="56" height="8" fill="#000" opacity="0.15"/>`,
+    socks: `<rect x="44" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="36" x2="60" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="66" y="24" width="16" height="52" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><rect x="66" y="70" width="26" height="12" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="66" y1="36" x2="82" y2="36" stroke="#7a7d4f" stroke-width="3"/><rect x="44" y="26" width="16" height="6" fill="#000" opacity="0.15"/><rect x="66" y="26" width="16" height="6" fill="#000" opacity="0.15"/><rect x="44" y="70" width="8" height="12" fill="#000" opacity="0.12"/><rect x="66" y="70" width="8" height="12" fill="#000" opacity="0.12"/>`,
+    towel: `<path d="M36,26 L52,96 L76,92 L62,22 Z" fill="#d8d2c0" stroke="${OUT}" stroke-width="2.5"/><line x1="44" y1="52" x2="66" y2="50" stroke="#7a7d4f" stroke-width="4"/><line x1="48" y1="70" x2="70" y2="68" stroke="#7a7d4f" stroke-width="4"/><path d="M52,96 l-2,6 M58,95 l-2,6 M64,94 l-2,6" stroke="${OUT}" stroke-width="1.5"/><line x1="50" y1="84" x2="68" y2="82" stroke="#7a7d4f" stroke-width="4"/>`,
+    shaker: `<rect x="48" y="36" width="24" height="48" rx="4" fill="#b8bcc0" stroke="${OUT}" stroke-width="2.5"/><rect x="54" y="28" width="12" height="10" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><line x1="48" y1="60" x2="72" y2="60" stroke="#c8a84a" stroke-width="3"/><line x1="48" y1="48" x2="72" y2="48" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="48" y1="70" x2="72" y2="70" stroke="${OUT}" stroke-width="1" opacity="0.5"/><line x1="52" y1="54" x2="56" y2="54" stroke="${OUT}" stroke-width="1"/><line x1="52" y1="66" x2="56" y2="66" stroke="${OUT}" stroke-width="1"/>`,
+    boots: `<rect x="40" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="36" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><rect x="64" y="28" width="20" height="60" fill="#2e2114" stroke="${OUT}" stroke-width="2.5"/><rect x="60" y="84" width="28" height="8" fill="#1a120a" stroke="${OUT}" stroke-width="2"/><path d="M44,36 L56,44 M56,36 L44,44 M44,52 L56,60 M56,52 L44,60 M68,36 L80,44 M80,36 L68,44 M68,52 L80,60 M80,52 L68,60" stroke="#8a7a5c" stroke-width="1.5"/><path d="M40,78 Q50,72 60,78 M64,78 Q74,72 84,78" fill="none" stroke="${OUT}" stroke-width="1.5" opacity="0.6"/><line x1="36" y1="90" x2="64" y2="90" stroke="#8a7a5c" stroke-width="1"/><line x1="60" y1="90" x2="88" y2="90" stroke="#8a7a5c" stroke-width="1"/>`,
+    bandolier: `<g transform="rotate(38 60 60)"><rect x="16" y="52" width="88" height="14" fill="#3a2f1c" stroke="${OUT}" stroke-width="2"/>${[22, 34, 46, 58, 70, 82, 94].map((x) => `<rect x="${x}" y="50" width="5" height="18" fill="#c8a84a" stroke="${OUT}" stroke-width="1"/>`).join("")}</g><line x1="20" y1="52" x2="100" y2="52" stroke="#000" stroke-width="1" opacity="0.25"/><line x1="20" y1="56" x2="100" y2="56" stroke="#fff" stroke-width="1" opacity="0.12"/>`,
+    cross: `<rect x="55" y="18" width="10" height="84" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><rect x="38" y="42" width="44" height="10" fill="#6b4a26" stroke="${OUT}" stroke-width="2.5"/><line x1="58" y1="22" x2="58" y2="98" stroke="${OUT}" stroke-width="1" opacity="0.4"/><line x1="42" y1="45" x2="78" y2="45" stroke="${OUT}" stroke-width="1" opacity="0.4"/><path d="M58,26 Q62,50 58,74" fill="none" stroke="${OUT}" stroke-width="1" opacity="0.35"/>`,
+    bible: `<rect x="40" y="28" width="40" height="64" rx="3" fill="#2a1f14" stroke="${OUT}" stroke-width="2.5"/><line x1="47" y1="32" x2="47" y2="88" stroke="#c8a84a" stroke-width="1.5"/><line x1="74" y1="32" x2="74" y2="88" stroke="#c9b98f" stroke-width="1.5" opacity="0.7"/><path d="M60,44 v20 M52,52 h16" stroke="#c8a84a" stroke-width="2.5"/><line x1="40" y1="84" x2="80" y2="84" stroke="${OUT}" stroke-width="1" opacity="0.5"/><rect x="68" y="88" width="4" height="10" fill="#a33333" stroke="${OUT}" stroke-width="1"/>`,
+    dumbbells: `<rect x="14" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="8" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="54" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="58" y="56" width="40" height="7" fill="#3a3a3a" stroke="${OUT}" stroke-width="2"/><rect x="98" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><rect x="52" y="46" width="8" height="26" fill="#2c2c28" stroke="${OUT}" stroke-width="2"/><line x1="14" y1="59" x2="54" y2="59" stroke="#000" stroke-width="1" opacity="0.4"/><line x1="58" y1="59" x2="98" y2="59" stroke="#000" stroke-width="1" opacity="0.4"/><line x1="10" y1="52" x2="10" y2="66" stroke="#000" stroke-width="1" opacity="0.5"/><line x1="104" y1="52" x2="104" y2="66" stroke="#000" stroke-width="1" opacity="0.5"/>`,
+    "figure-night": `<circle cx="60" cy="32" r="14" fill="#e8b98a" stroke="${OUT}" stroke-width="2.5"/><rect x="44" y="48" width="32" height="46" fill="#23241f" stroke="${OUT}" stroke-width="2.5"/><rect x="48" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><rect x="62" y="94" width="10" height="18" fill="#2c2f1c" stroke="${OUT}" stroke-width="2"/><path d="M44,56 L76,56" stroke="#000" stroke-width="1.5" opacity="0.4"/><circle cx="60" cy="30" r="3" fill="#1a1a1a"/><path d="M52,26 L56,22" stroke="#fff" stroke-width="1.5" opacity="0.6"/>`
   }[item.glyph] || `<circle cx="60" cy="60" r="20" fill="#4a4430" stroke="${OUT}" stroke-width="2.5"/>`;
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;display:block">${g}</svg>`;
 }
@@ -1328,7 +1361,7 @@ if (typeof module !== "undefined" && module.exports) {
     SHOP_ITEMS, ITEM_BY_ID, EMPTY_EQUIPPED, CRATES, CRATE_BY_ID, scrapValue,
     resolveCrateReward, wcMult, wcBoosted, WC_MULT_END, migrateState,
     syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS, SEED_LABELS,
-    charImageFor, charTier, charBulk,
+    charImageFor, charTier, charBulk, WORN_PHOTO,
     buildCharacterSvg, previewSvg, slotFilter, eraBadge, eraMatches,
     prestigeToState, ACHIEVEMENTS, QUESTS, achievementEarned, awardAchievements,
     questProgress, checkQuests };
@@ -2021,7 +2054,9 @@ if (typeof document !== "undefined") {
   }
   function crateSvg(crate) {
     const color = crate.id === "epic" ? "#c8a84a" : crate.id === "rare" ? "#7dd87d" : "#8a8f5c";
-    return `<svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:74px;display:block"><rect x="14" y="18" width="92" height="48" fill="#3a3524" stroke="${color}" stroke-width="2.5"/><line x1="14" y1="32" x2="106" y2="32" stroke="${color}" stroke-width="1.5"/><line x1="14" y1="52" x2="106" y2="52" stroke="${color}" stroke-width="1.5"/><rect x="52" y="34" width="16" height="14" fill="none" stroke="${color}" stroke-width="2"/><text x="60" y="44" text-anchor="middle" font-size="9" fill="${color}" font-family="Arial, Helvetica, sans-serif" font-weight="bold">${crate.id === "epic" ? "EPIC" : crate.id === "rare" ? "RARE" : "SUPPLY"}</text></svg>`;
+    const wood = crate.id === "epic" ? "#4a3b1c" : crate.id === "rare" ? "#37402a" : "#3a3524";
+    const label = crate.id === "epic" ? "EPIC" : crate.id === "rare" ? "RARE" : "SUPPLY";
+    return `<svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:74px;display:block"><rect x="14" y="18" width="92" height="48" fill="${wood}" stroke="${color}" stroke-width="2.5"/><line x1="14" y1="32" x2="106" y2="32" stroke="${color}" stroke-width="1" opacity="0.6"/><line x1="14" y1="52" x2="106" y2="52" stroke="${color}" stroke-width="1" opacity="0.6"/><line x1="14" y1="42" x2="106" y2="42" stroke="#000" stroke-width="1" opacity="0.25"/><rect x="14" y="18" width="10" height="48" fill="#000" opacity="0.18"/><rect x="96" y="18" width="10" height="48" fill="#000" opacity="0.18"/><rect x="14" y="18" width="92" height="6" fill="#000" opacity="0.15"/><rect x="28" y="18" width="5" height="48" fill="${color}" opacity="0.35"/><rect x="87" y="18" width="5" height="48" fill="${color}" opacity="0.35"/><path d="M14,18 L24,28 M106,18 L96,28 M14,66 L24,56 M106,66 L96,56" stroke="${color}" stroke-width="2"/><rect x="38" y="34" width="44" height="14" fill="none" stroke="${color}" stroke-width="2"/><text x="60" y="44" text-anchor="middle" font-size="9" fill="${color}" font-family="Arial, Helvetica, sans-serif" font-weight="bold">${label}</text><text x="60" y="61" text-anchor="middle" font-size="6" fill="${color}" opacity="0.8" font-family="Arial, Helvetica, sans-serif">— DEPOT —</text></svg>`;
   }
   function renderShop() {
     $("shopCoins").textContent = state.coins.toLocaleString();
@@ -2051,7 +2086,7 @@ if (typeof document !== "undefined") {
       const blocked = !!state.pendingDuplicate;
       const afford = state.coins >= c.price;
       const sel = selectedCrate === c.id;
-      return `<div class="crate-card ${c.id === "rare" ? "rare-lit" : ""} ${sel ? "selected" : ""} ${blocked ? "blocked" : ""}" data-select-crate="${c.id}" id="crate-${c.id}">
+      return `<div class="crate-card ${c.id === "rare" ? "rare-lit" : c.id === "epic" ? "epic-lit" : "supply-lit"} ${sel ? "selected" : ""} ${blocked ? "blocked" : ""}" data-select-crate="${c.id}" id="crate-${c.id}">
         ${crateSvg(c)}
         <b>${esc(c.name)}</b>
         <span class="odds ${sel ? "green" : ""}">${c.price} WC · Gear ${(c.gear * 100).toFixed(0)}% · Coins ${(Math.round((1 - c.gear - c.token) * 100))}% · 2× Token ${(c.token * 100).toFixed(0)}%</span>
@@ -2207,7 +2242,13 @@ if (typeof document !== "undefined") {
     const latest = state.weights.length ? state.weights[state.weights.length - 1].weight : state.profile.startWeight;
     const charImg = charImageFor(state.equipped, state.facialHair, state.figureVariant);
     const charScale = charBulk(latest).toFixed(3);
-    $("charFigure").innerHTML = `<div class="char-photo-wrap"><img class="char-photo${charImg.night ? " char-night" : ""}" src="${charImg.src}"${charImg.fallback ? " data-fb=\"" + charImg.fallback + "\" onerror=\"if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb='';}\"" : ""} alt="Character figure" style="transform:scale(${charScale})"></div>`;
+    // Worn photos load network-first (never precached): show the tier photo
+    // immediately, swap to the worn photo once it loads, fall back to the
+    // tier photo if the worn photo errors — never a broken image.
+    const charImgTag = charImg.worn
+      ? `<img class="char-photo${charImg.night ? " char-night" : ""}" src="${charImg.fallback}" data-worn="${charImg.worn}" data-fb="${charImg.fallback}" onload="if(this.dataset.worn){var w=this.dataset.worn;this.dataset.worn='';this.src=w;}" onerror="if(this.dataset.fb&&this.src.indexOf(this.dataset.fb)===-1){this.src=this.dataset.fb;}" alt="Character figure" style="transform:scale(${charScale})">`
+      : `<img class="char-photo${charImg.night ? " char-night" : ""}" src="${charImg.src}"${charImg.fallback ? " data-fb=\"" + charImg.fallback + "\" onerror=\"if(this.dataset.fb){this.src=this.dataset.fb;this.dataset.fb='';}\"" : ""} alt="Character figure" style="transform:scale(${charScale})">`;
+    $("charFigure").innerHTML = `<div class="char-photo-wrap">${charImgTag}</div>`;
     const level = levelForXp(state.xpTotal);
     $("charStats").innerHTML = "Weight: <b>" + latest + " lbs</b> (goal " + state.profile.goalWeight + ") · Level " + level + " " + esc(rankForLevel(level)) + " · " + state.xpTotal + " XP · " + state.coins.toLocaleString() + " WC";
     const faces = [["clean", "Clean shaven"], ["stubble", "Stubble"], ["beard", "Beard"], ["moustache", "Moustache"]];
