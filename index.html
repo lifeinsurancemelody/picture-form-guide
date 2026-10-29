@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Picture Form Guide</title>
+<meta name="description" content="Anthony's private training and food log.">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0e1110">
+<!-- iOS PWA tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Form Guide">
+<link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="./assets/icons/icon-192.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header>
+  <h1>Form Guide</h1>
+  <span class="week-badge" id="weekBadge">Week —</span>
+  <span class="xp-chip" id="xpChip">0 XP</span>
+  <button class="icon-btn" id="muteBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+</header>
+
+<nav class="sidebar" aria-label="Main">
+  <h2>Form Guide</h2>
+  <button data-tab="days" class="on">Days</button>
+  <button data-tab="log">Log</button>
+  <button data-tab="progress">Progress</button>
+  <div class="side-xp" id="sideXp"></div>
+</nav>
+
+<main class="layout">
+  <div class="banner" id="banner"></div>
+
+  <!-- ============ DAYS TAB ============ -->
+  <section class="tab active" id="tab-days">
+    <div class="chips" id="dayChips"></div>
+    <div class="chips sticky" id="jumpChips"></div>
+    <div id="dayCards"></div>
+  </section>
+
+  <!-- ============ LOG TAB ============ -->
+  <section class="tab" id="tab-log">
+    <div class="card">
+      <h2>Log a lift</h2>
+      <p class="muted">Pick the day, then save each lift on its own. Saving one lift never wipes the others from today's session.</p>
+      <div class="chips" id="logDayChips"></div>
+      <div id="logCards"></div>
+    </div>
+
+    <div class="card" id="nutritionCard">
+      <h2>Nutrition — <span id="todayLabel">Today</span></h2>
+      <p class="muted" id="countdown">Day closes at midnight.</p>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:14px">
+          <span>Calories</span><span id="calTotals"></span>
+        </div>
+        <div class="meter"><div id="calMeter" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px">
+          <span>Protein</span><span id="proteinTotals"></span>
+        </div>
+        <div class="meter protein"><div id="proteinMeter" style="width:0%"></div></div>
+      </div>
+      <h3>Add food as you go</h3>
+      <label>Food</label>
+      <input type="text" id="foodName" placeholder="e.g. Fairlife shake" autocomplete="off">
+      <div class="form-row">
+        <div><label>Calories (estimate)</label><input type="number" id="foodCal" inputmode="numeric" min="0" placeholder="150"></div>
+        <div><label>Protein g (estimate)</label><input type="number" id="foodProtein" inputmode="numeric" min="0" placeholder="30"></div>
+      </div>
+      <p style="margin-top:12px"><button id="addFoodBtn">Add to today</button></p>
+      <h3>Already logged today</h3>
+      <div id="todayFoodList"></div>
+      <h3>History</h3>
+      <div id="foodHistory"></div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRESS TAB ============ -->
+  <section class="tab" id="tab-progress">
+    <div class="card" id="xpCard">
+      <h2>Strength</h2>
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span id="rankLine"></span><span id="xpLine"></span>
+      </div>
+      <div class="meter"><div id="xpMeter" style="width:0%"></div></div>
+      <p class="muted" id="xpCapLine"></p>
+      <p><span id="coinsLine"></span></p>
+      <h3>2× XP</h3>
+      <p class="muted" id="doubleLine"></p>
+      <p>
+        <button id="claimBtn" class="secondary">Claim banked charge</button>
+        <button id="activateBtn" class="secondary">Activate 2× XP</button>
+      </p>
+      <p class="muted">Claiming only banks a charge. Activating switches one banked charge on — only the next session logged while it is on pays double, then it switches off. A session started before activation is never doubled, and no button can change an already-saved session.</p>
+      <h3>How lifts score</h3>
+      <p class="muted">Move-up (more weight, or more total reps at the same weight): +2 XP. Held (same weight, same total reps): +1 XP. Reset (fewer reps, or less weight): +0 XP. Doubled sessions pay twice.</p>
+    </div>
+
+    <div class="card">
+      <h2>Bodyweight</h2>
+      <div id="weightList"></div>
+      <div class="form-row">
+        <div><label>Date</label><input type="date" id="weightDate"></div>
+        <div><label>Weight (lbs)</label><input type="number" id="weightVal" inputmode="decimal" step="0.1" min="0" placeholder="148.6"></div>
+      </div>
+      <p style="margin-top:12px"><button id="addWeightBtn">Add weigh-in</button></p>
+      <p class="muted">+2 XP per week of average gain: when a new week's average weigh-in beats the most recent earlier week with weigh-ins, and that week hasn't paid out yet.</p>
+    </div>
+
+    <div class="card">
+      <h2>Workout history</h2>
+      <p class="muted">Every session, lift by lift. Deleting a lift or a session recalculates XP on the spot. Seeded history from before this app predates its XP ledger, so deleting a seeded lift does not change the XP total.</p>
+      <div id="historyList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Backup</h2>
+      <p class="muted">Everything lives on this phone. Export a JSON backup so clearing browser data can't wipe you out, and import it back any time.</p>
+      <p>
+        <button id="exportBtn">Export backup (JSON)</button>
+        <label for="importFile" class="muted" style="display:inline-block;margin-left:8px;cursor:pointer;text-decoration:underline">Import backup</label>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </p>
+      <p class="muted" id="backupMsg"></p>
+    </div>
+  </section>
+
+  <p class="footer-note">Private, personal use only. All calorie and protein figures are estimates. Stage 1: training + food. Shop, crates, character, and prestige vault come in later stages.</p>
+</main>
+
+<nav class="bottom-nav" aria-label="Main">
+  <button data-tab="days" class="on">Days</button>
+  <button data-tab="log">Log</button>
+  <button data-tab="progress">Progress</button>
+</nav>
+
+<script src="./app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
