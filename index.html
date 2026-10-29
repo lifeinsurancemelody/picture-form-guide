@@ -17,9 +17,12 @@
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+<div class="depot-bg" aria-hidden="true"><div class="bg-haze h1"></div><div class="bg-haze h2"></div><div class="bg-beam"></div><div class="bg-embers"></div><div class="bg-vignette"></div></div>
+<div class="shop-bg" aria-hidden="true"><div class="bg-haze h1"></div><div class="bg-haze h2"></div><div class="bg-beam"></div><div class="bg-crates"></div></div>
 <header>
-  <h1>Form Guide</h1>
+  <div class="brand"><h1>Form Guide</h1><span class="depot-tag">DEPOT</span></div>
   <span class="week-badge" id="weekBadge">Week —</span>
+  <span class="coins-chip" id="coinsChip">🪙 0</span>
   <span class="xp-chip" id="xpChip">0 XP</span>
   <button class="icon-btn" id="muteBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
 </header>
@@ -28,6 +31,8 @@
   <h2>Form Guide</h2>
   <button data-tab="days" class="on">Days</button>
   <button data-tab="log">Log</button>
+  <button data-tab="shop">Shop</button>
+  <button data-tab="character">Character</button>
   <button data-tab="progress">Progress</button>
   <div class="side-xp" id="sideXp"></div>
 </nav>
@@ -76,6 +81,40 @@
       <div id="todayFoodList"></div>
       <h3>History</h3>
       <div id="foodHistory"></div>
+    </div>
+  </section>
+
+  <!-- ============ SHOP TAB ============ -->
+  <section class="tab" id="tab-shop">
+    <div class="depot-head">
+      <div><div class="eyebrow">MULTIPLAYER</div><h2>DEPOT</h2></div>
+      <div class="depot-bal">
+        <span class="bal-line">🪙 <b id="shopCoins">0</b> War Coins</span>
+        <span class="bal-line muted" id="shopOwned">0 owned</span>
+      </div>
+    </div>
+    <p class="muted" id="shopBoost" style="display:none"></p>
+    <h3 class="depot-sub">SUPPLY DROPS</h3>
+    <div class="crate-row" id="crateRow"></div>
+    <h3 class="depot-sub">ARMORY</h3>
+    <div class="chips" id="shopFilters"></div>
+    <div class="shop-grid" id="shopGrid"></div>
+    <p class="muted">Collections: owned items live here and on your character. Tops are cut like the Saint Script jacket, bottoms like the baggy camo cargos, and garments carry only the verse reference at the hem — the full verse and its meaning are behind the ! button. Duplicate crate rewards never stack: they must be scrapped for War Coins before another crate can open.</p>
+  </section>
+
+  <!-- ============ CHARACTER TAB ============ -->
+  <section class="tab" id="tab-character">
+    <div class="card">
+      <h2>Your Operator</h2>
+      <div id="charFigure"></div>
+      <p id="charStats" class="muted" style="text-align:center"></p>
+      <h3>Facial hair</h3>
+      <div class="chips" id="faceChips"></div>
+      <h3>Equipped</h3>
+      <div id="equippedList"></div>
+      <h3>Owned gear — tap to equip</h3>
+      <div class="chips" id="ownedChips"></div>
+      <p class="muted">Base kit: plain shorts, a basic olive fatigues shirt, and ankle boots. Everything else is earned in the shop and equipped here. Mass follows your weigh-ins.</p>
     </div>
   </section>
 
@@ -129,12 +168,47 @@
     </div>
   </section>
 
-  <p class="footer-note">Private, personal use only. All calorie and protein figures are estimates. Stage 1: training + food. Shop, crates, character, and prestige vault come in later stages.</p>
+  <p class="footer-note">Private, personal use only. All calorie and protein figures are estimates. Stage 2: training + food + shop + character.</p>
 </main>
+
+<!-- Unlock reveal -->
+<div class="modal" id="unlockModal" role="dialog" aria-modal="true" aria-label="Item unlocked">
+  <div class="modal-card">
+    <div class="modal-eyebrow">SUPPLY SECURED</div>
+    <h2>UNLOCKED</h2>
+    <div id="unlockPreview"></div>
+    <p><b id="unlockName"></b></p>
+    <p><button id="unlockEquipBtn">Equip it</button> <button class="secondary" id="unlockDoneBtn">Done</button></p>
+  </div>
+</div>
+
+<!-- Crate reveal -->
+<div class="modal" id="crateModal" role="dialog" aria-modal="true" aria-label="Supply drop result">
+  <div class="modal-card">
+    <div class="modal-eyebrow">SUPPLY DROP</div>
+    <h2 id="crateTitle">OPENED</h2>
+    <div id="crateBody"></div>
+    <p id="crateActions"></p>
+  </div>
+</div>
+
+<!-- Duplicate reward: BLOCKING. No close, skip, or collect button — scrapping is the only way out. -->
+<div class="modal blocking" id="dupModal" role="alertdialog" aria-modal="true" aria-label="Duplicate reward">
+  <div class="modal-card">
+    <div class="modal-eyebrow">DUPLICATE REWARD</div>
+    <h2>YOU ALREADY OWN THIS</h2>
+    <div id="dupPreview"></div>
+    <p><b id="dupName"></b></p>
+    <p class="muted">Duplicates never stack. Scrap it for War Coins to keep going — no other crate can open until this is handled.</p>
+    <p><button id="dupScrapBtn">Scrap / sell back for <span id="dupScrapVal">0</span> WC</button></p>
+  </div>
+</div>
 
 <nav class="bottom-nav" aria-label="Main">
   <button data-tab="days" class="on">Days</button>
   <button data-tab="log">Log</button>
+  <button data-tab="shop">Shop</button>
+  <button data-tab="character">Character</button>
   <button data-tab="progress">Progress</button>
 </nav>
 

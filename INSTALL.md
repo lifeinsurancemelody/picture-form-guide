@@ -1,8 +1,10 @@
-# Picture Form Guide — iPhone install (Stage 1)
+# Picture Form Guide — iPhone install (Stage 2)
 
-Stage 1 is the standalone PWA: training + food logging only. Shop, crates,
-character figure, and the prestige vault come in later stages. Everything
-lives on your phone — no server, no account.
+Stage 2 is the standalone PWA: training + food logging, plus the shop,
+supply crates, and the character figure — all in the CoD depot style, over
+an animated hangar backdrop. Everything lives on your phone — no server,
+no account. The prestige vault and full rank-insignia artwork come in a
+later stage.
 
 ## Install on iPhone
 
@@ -28,9 +30,29 @@ lives on your phone — no server, no account.
   countdown to midnight; each entry saves immediately onto the running
   total. Anything logged after midnight counts for the next day, and an
   app left open across midnight rolls over on its own.
-- **Progress** — XP, level, rank, War Coins (display only for now), 2× XP
-  stack with Claim/Activate, bodyweight tracker, full workout history
-  with per-lift and per-session delete (XP recalculates).
+- **Progress** — XP, level, rank, War Coins (now earned, not display-only),
+  2× XP stack with Claim/Activate, bodyweight tracker, full workout history
+  with per-lift and per-session delete (XP recalculates; War Coins earned
+  are never clawed back once paid).
+- **Shop** — MULTIPLAYER/DEPOT header, supply drops, and the Armory.
+  Tops are cut like the Saint Script jacket, bottoms like the baggy camo
+  cargos; garments show only the verse reference at the hem, with the full
+  verse and its meaning behind the ! button. Buying pops an UNLOCKED reveal
+  with a futuristic unlock sound. Owned items equip onto your character.
+- **Supply crates** — Supply (100 WC), Rare (250 WC), Epic (500 WC).
+  Rewards can be gear, coins, or a double-XP token. A duplicate crate
+  reward never stacks: a blocking notice with only a scrap/sell-back
+  button appears, no other crate can open until it is scrapped, and the
+  notice comes back on next open if the app is closed mid-notice.
+- **Character** — cartoon action-figure style. Base kit is plain shorts, a
+  basic olive fatigues shirt, and ankle boots; everything else is earned
+  and equipped. Facial hair: Clean shaven (bare face), Stubble, Beard —
+  the mouth always shows. Hand-held items sit in a solid fist that never
+  clips the item's top. Mass follows your weigh-ins.
+- **War Coins** — earned from sessions (+10), sets (+1 each), reps (+1 per
+  5), move-ups (+20), target hits (+30), protein days (+20), calorie days
+  (+20), weigh-ins (+15), weekly gains (+30). Weigh-ins, weekly gains,
+  and fuel days pay 1.5× through Nov 10, 2026.
 - **Backup** — Progress → Backup → Export saves all data as JSON.
   Import it back any time. Do this before clearing Safari data.
 

@@ -1,13 +1,16 @@
-/* Picture Form Guide PWA — Stage 1 styles. Phone-first, dark gym theme. */
+/* Picture Form Guide PWA — Stage 2 styles. CoD depot theme: dark hangar mood,
+   olive/gold/green accents, stencil-style type, translucent panels over an
+   animated backdrop. Phone-first. No images — all background art is CSS. */
 :root {
-  --bg: #0e1110;
-  --panel: #1a1f1c;
+  --bg: #0b0f0a;
+  --panel: #161c12;
   --panel2: #222925;
-  --line: #2e3833;
+  --line: rgba(138, 143, 92, 0.4);
   --text: #e8e6df;
   --dim: #9aa39d;
-  --gold: #c9a227;
-  --green: #7fb069;
+  --gold: #c8a84a;
+  --green: #7dd87d;
+  --olive: #8a8f5c;
   --red: #d64545;
   --radius: 12px;
 }
@@ -44,20 +47,98 @@ input[type="text"], input[type="number"], input[type="date"], select {
   width: 100%;
 }
 label { font-size: 13px; color: var(--dim); display: block; margin: 6px 0 3px; }
+h1, h2, h3 { text-transform: uppercase; letter-spacing: 0.06em; }
+h2 { font-size: 19px; }
+h3 { font-size: 15px; }
+
+/* ---------- Animated depot backgrounds (CSS only, transform/opacity only) ---------- */
+.depot-bg, .shop-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(90, 100, 55, 0.35), transparent 60%),
+    linear-gradient(180deg, #10160e 0%, #0b0f0a 45%, #070906 100%);
+}
+.bg-haze { position: absolute; border-radius: 50%; }
+.bg-haze.h1 {
+  width: 70vw; height: 70vw; left: -15vw; top: -20vw;
+  background: radial-gradient(circle, rgba(125, 140, 80, 0.28), transparent 65%);
+  animation: drift1 26s ease-in-out infinite alternate;
+}
+.bg-haze.h2 {
+  width: 60vw; height: 60vw; right: -12vw; bottom: -18vw;
+  background: radial-gradient(circle, rgba(200, 168, 74, 0.16), transparent 65%);
+  animation: drift2 32s ease-in-out infinite alternate;
+}
+.bg-beam {
+  position: absolute;
+  top: -10%; bottom: -10%; width: 22vw; left: 0;
+  background: linear-gradient(90deg, transparent, rgba(232, 230, 223, 0.05), transparent);
+  transform: skewX(-18deg);
+  animation: sweep 42s linear infinite;
+}
+.bg-embers {
+  position: absolute; inset: 0; opacity: 0.28;
+  background-image: radial-gradient(rgba(200, 168, 74, 0.8) 1px, transparent 1.5px);
+  background-size: 120px 120px;
+  animation: twinkle 5s ease-in-out infinite alternate;
+}
+.bg-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+.shop-bg { display: none; }
+body.shop-active .shop-bg { display: block; }
+body.shop-active .depot-bg { display: none; }
+.shop-bg { background:
+  radial-gradient(120% 60% at 50% 0%, rgba(60, 110, 60, 0.30), transparent 60%),
+  linear-gradient(180deg, #0d140d 0%, #0a0f0a 45%, #060906 100%);
+}
+.shop-bg .bg-haze.h1 { background: radial-gradient(circle, rgba(125, 216, 125, 0.20), transparent 65%); animation-duration: 34s; }
+.shop-bg .bg-haze.h2 { background: radial-gradient(circle, rgba(200, 168, 74, 0.14), transparent 65%); animation-duration: 40s; }
+.bg-crates {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 22vh; opacity: 0.5;
+  background:
+    repeating-linear-gradient(90deg, rgba(58, 53, 36, 0.9) 0 74px, transparent 74px 92px),
+    linear-gradient(180deg, transparent, rgba(20, 24, 14, 0.9));
+}
+@keyframes drift1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(6vw, 4vh) scale(1.12); } }
+@keyframes drift2 { from { transform: translate(0, 0) scale(1.05); } to { transform: translate(-5vw, -3vh) scale(0.95); } }
+@keyframes sweep { from { left: -30%; } to { left: 130%; } }
+@keyframes twinkle { from { opacity: 0.18; } to { opacity: 0.32; } }
+@keyframes shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  20% { transform: translateX(-4px) rotate(-1deg); }
+  40% { transform: translateX(4px) rotate(1deg); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-haze, .bg-beam, .bg-embers { animation: none !important; }
+}
 
 /* Header */
 header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(14, 17, 16, 0.96);
+  background: rgba(11, 15, 10, 0.94);
   border-bottom: 1px solid var(--line);
   padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-header h1 { font-size: 18px; margin: 0; flex: 1; }
+.brand { flex: 1 1 150px; display: flex; align-items: center; gap: 8px; }
+.brand h1 { font-size: 18px; margin: 0; }
+.depot-tag {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.18em;
+  color: var(--gold); border: 1px solid var(--gold); border-radius: 4px; padding: 2px 5px;
+}
 .week-badge {
   font-size: 12px;
   background: var(--panel2);
@@ -67,14 +148,15 @@ header h1 { font-size: 18px; margin: 0; flex: 1; }
   white-space: nowrap;
 }
 .xp-chip { font-size: 12px; color: var(--gold); font-weight: 700; white-space: nowrap; }
+.coins-chip { font-size: 12px; color: var(--gold); font-weight: 800; white-space: nowrap; }
 .icon-btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); padding: 8px 11px; }
 
 /* Layout */
-.layout { max-width: 860px; margin: 0 auto; padding: 14px; }
+.layout { max-width: 860px; margin: 0 auto; padding: 14px; position: relative; z-index: 1; }
 .tab { display: none; }
 .tab.active { display: block; }
 .card {
-  background: var(--panel);
+  background: linear-gradient(180deg, rgba(22, 28, 18, 0.88), rgba(12, 16, 10, 0.92));
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 14px;
@@ -83,8 +165,9 @@ header h1 { font-size: 18px; margin: 0; flex: 1; }
 .card h2 { margin: 0 0 8px; font-size: 17px; }
 .card h3 { margin: 12px 0 6px; font-size: 15px; }
 .muted { color: var(--dim); font-size: 13px; }
+.gold { color: var(--gold); }
 .banner {
-  background: #2a2410;
+  background: rgba(42, 36, 16, 0.92);
   border: 1px solid var(--gold);
   border-radius: var(--radius);
   padding: 10px 12px;
@@ -95,7 +178,7 @@ header h1 { font-size: 18px; margin: 0; flex: 1; }
 
 /* Day switcher + jump chips */
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.chips.sticky { position: sticky; top: 54px; z-index: 15; background: var(--bg); padding: 8px 0; }
+.chips.sticky { position: sticky; top: 54px; z-index: 15; background: rgba(11, 15, 10, 0.94); padding: 8px 0; }
 .chip {
   background: var(--panel2);
   color: var(--text);
@@ -170,13 +253,77 @@ header h1 { font-size: 18px; margin: 0; flex: 1; }
 .lift-line { font-size: 14px; padding: 4px 0 4px 10px; border-left: 2px solid var(--line); margin: 4px 0; display: flex; justify-content: space-between; gap: 8px; }
 .lift-line .xp { color: var(--gold); font-size: 13px; white-space: nowrap; }
 
+/* ---------- Depot shop ---------- */
+.depot-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin: 2px 0 10px; }
+.depot-head .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.32em; color: var(--green); }
+.depot-head h2 { font-size: 36px; margin: 0; letter-spacing: 0.12em; line-height: 1; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6); }
+.depot-bal { text-align: right; }
+.bal-line { display: block; font-size: 14px; }
+.depot-sub { font-size: 13px; letter-spacing: 0.22em; color: var(--green); margin: 18px 0 8px; }
+.crate-row { display: flex; gap: 10px; }
+.crate-card {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(22, 28, 18, 0.88), rgba(12, 16, 10, 0.92));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.crate-card b { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+.crate-card .muted { font-size: 11px; }
+.crate-card button { width: 100%; padding: 9px 6px; font-size: 12px; }
+.crate-card.blocked { opacity: 0.75; }
+.crate-card.opening { animation: shake 0.9s ease-in-out; border-color: var(--gold); box-shadow: 0 0 18px rgba(200, 168, 74, 0.45); }
+.shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.shop-card { margin-bottom: 0; padding: 10px; display: flex; flex-direction: column; }
+.shop-preview { background: rgba(0, 0, 0, 0.28); border-radius: 8px; margin-bottom: 8px; }
+.shop-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; font-size: 14px; }
+.info-btn {
+  flex-shrink: 0;
+  width: 22px; height: 22px; padding: 0;
+  border-radius: 50%;
+  background: var(--gold); color: #141414;
+  font-size: 13px; font-weight: 800; line-height: 1;
+}
+.shop-details { display: none; font-size: 13px; margin-top: 8px; border-left: 2px solid var(--gold); padding-left: 8px; }
+.shop-details.open { display: block; }
+.shop-details .verse { font-style: italic; color: #cfd6b8; }
+.shop-foot { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+.shop-foot .price { font-weight: 800; color: var(--gold); }
+.owned-tag { font-size: 11px; font-weight: 700; color: var(--green); border: 1px solid var(--green); border-radius: 999px; padding: 2px 7px; }
+.shop-card > button:last-child { margin-top: auto; }
+
+/* ---------- Modals ---------- */
+.modal {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0, 0, 0, 0.78);
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal.show { display: flex; }
+.modal-card {
+  width: calc(100% - 8px); max-width: 340px;
+  background: linear-gradient(180deg, rgba(26, 32, 20, 0.97), rgba(12, 16, 10, 0.98));
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(200, 168, 74, 0.25);
+}
+.modal-card h2 { margin: 4px 0 10px; letter-spacing: 0.14em; }
+.modal-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.3em; color: var(--green); }
+.modal.blocking .modal-card { border-color: #8a3a3a; }
+.modal.blocking .modal-card h2 { color: #e07878; }
+.big-reward { font-size: 28px; font-weight: 800; color: var(--gold); margin: 12px 0; }
+
 /* Bottom nav / sidebar */
 .bottom-nav {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 30;
   display: flex;
-  background: #131816;
+  background: rgba(19, 24, 22, 0.97);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -187,11 +334,21 @@ header h1 { font-size: 18px; margin: 0; flex: 1; }
   border: 0;
   border-radius: 0;
   padding: 13px 0 11px;
-  font-size: 13px;
+  font-size: 12px;
 }
 .bottom-nav button.on { color: var(--gold); }
 .sidebar { display: none; }
 
+@media (min-width: 600px) {
+  .shop-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 400px) {
+  .week-badge, .xp-chip, .coins-chip { font-size: 11px; }
+  .icon-btn { padding: 7px 9px; }
+  .bottom-nav button { font-size: 11px; padding: 12px 0 10px; }
+  .chips.sticky { top: 104px; } /* header wraps to two rows on very narrow phones */
+  .ex-card { scroll-margin-top: 150px; }
+}
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
   .bottom-nav { display: none; }
@@ -201,9 +358,10 @@ header h1 { font-size: 18px; margin: 0; flex: 1; }
     position: fixed;
     left: 0; top: 0; bottom: 0;
     width: 210px;
-    background: #131816;
+    background: rgba(19, 24, 22, 0.97);
     border-right: 1px solid var(--line);
     padding: 18px 14px;
+    z-index: 25;
   }
   .sidebar h2 { font-size: 18px; margin: 0 0 16px; }
   .sidebar button {
