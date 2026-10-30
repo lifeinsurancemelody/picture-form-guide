@@ -2,7 +2,7 @@
    Cache-first for the app shell so the app opens offline after the first
    visit. Photos and prestige emblems are precached too (small, local
    files). Version the cache name on each release so updates replace old files. */
-const CACHE = "pfg-pwa-v14";
+const CACHE = "pfg-pwa-v15";
 const CORE = [
   "./",
   "./index.html",

@@ -1685,9 +1685,32 @@ if (typeof document !== "undefined") {
     if (info && info.leveledUp) {
       playLevelUp();
       showBanner("🎉 Level up! You are now <b>Level " + info.newLevel + " · " + esc(rankForLevel(info.newLevel)) + "</b>" + (extraHtml || ""));
+      showLevelUpOverlay(info, extraHtml);
     } else if (extraHtml) {
       showBanner(extraHtml);
     }
+  }
+  /* Rank-up overlay: a centered, fixed card that cannot be missed the way
+     the in-flow banner can (the banner sits at the top of the page, so a
+     claim tapped while scrolled down to the Progress boxes never showed
+     it). Tap anywhere to dismiss; auto-dismisses after 8s like the banner. */
+  function showLevelUpOverlay(info, extraHtml) {
+    try {
+      const old = document.getElementById("levelupOverlay");
+      if (old) old.remove();
+      const ov = document.createElement("div");
+      ov.id = "levelupOverlay";
+      ov.className = "levelup-overlay";
+      ov.innerHTML = `<div class="levelup-card">` + rankInsigniaSvg(info.newLevel, 64) +
+        `<div class="levelup-title">🎉 LEVEL UP!</div>` +
+        `<div class="levelup-rank">Level ` + info.newLevel + ` · ` + esc(rankForLevel(info.newLevel)) + `</div>` +
+        (extraHtml ? `<div class="levelup-detail">` + extraHtml + `</div>` : "") +
+        `<button class="levelup-dismiss">Nice</button></div>`;
+      ov.addEventListener("click", () => ov.remove());
+      document.body.appendChild(ov);
+      clearTimeout(showLevelUpOverlay._t);
+      showLevelUpOverlay._t = setTimeout(() => ov.remove(), 8000);
+    } catch (e) {}
   }
   /* Award + quest notifications: completed entries pay when claimed. */
   function notifyAwards() {
@@ -2070,19 +2093,19 @@ if (typeof document !== "undefined") {
     }
     $("achievementsBox").querySelectorAll("[data-claim-ach]").forEach((b) => b.addEventListener("click", () => {
       const r = claimAchievement(state, b.dataset.claimAch);
-      if (r) { persist(); renderProgress(); renderHeader(); celebrateClaim(b, r, "🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
+      if (r) { persist(); celebrateClaim(b, r, "🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     $("achievementsBox").querySelectorAll("[data-claim-all-ach]").forEach((b) => b.addEventListener("click", () => {
       const rs = claimAllAchievements(state);
-      if (rs.length) { persist(); renderProgress(); renderHeader(); celebrateClaimAll(b, rs, "🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
+      if (rs.length) { persist(); celebrateClaimAll(b, rs, "🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     $("questsBox").querySelectorAll("[data-claim-quest]").forEach((b) => b.addEventListener("click", () => {
       const r = claimQuest(state, b.dataset.claimQuest);
-      if (r) { persist(); renderProgress(); renderHeader(); celebrateClaim(b, r, "✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
+      if (r) { persist(); celebrateClaim(b, r, "✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     $("questsBox").querySelectorAll("[data-claim-all-quest]").forEach((b) => b.addEventListener("click", () => {
       const rs = claimAllQuests(state);
-      if (rs.length) { persist(); renderProgress(); renderHeader(); celebrateClaimAll(b, rs, "✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
+      if (rs.length) { persist(); celebrateClaimAll(b, rs, "✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     applyCollapse();
   }
