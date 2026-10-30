@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MPFB Garments Proof — Picture Form Guide</title>
+<style>
+  html,body{margin:0;height:100%;background:#141416;color:#eee;font-family:-apple-system,system-ui,sans-serif;overflow:hidden}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #panel{position:fixed;left:12px;top:12px;background:rgba(10,10,12,.82);border:1px solid #333;border-radius:12px;padding:12px 14px;max-width:320px;z-index:2}
+  #panel h2{margin:0 0 6px;font-size:16px}
+  #panel p{margin:4px 0;font-size:12px;color:#bbb}
+  #panel label{display:block;margin:10px 0 2px;font-size:13px;color:#ccc}
+  #panel select{width:100%;margin-top:2px}
+  #panel input[type=range]{width:100%}
+  #panel .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  #panel .row label{display:flex;align-items:center;gap:5px;margin:0;font-size:13px}
+  #note{position:fixed;left:12px;bottom:12px;right:12px;background:rgba(10,10,12,.75);border:1px solid #333;border-radius:10px;padding:8px 12px;font-size:12px;color:#bbb;z-index:2}
+  #note b{color:#fff}
+  #stats{position:fixed;right:12px;top:12px;background:rgba(10,10,12,.75);border:1px solid #333;border-radius:10px;padding:6px 10px;font-size:12px;color:#bbb;z-index:2}
+  #status{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:15px;color:#ccc;z-index:1;text-align:center;max-width:80%}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="status">Loading MPFB garments figure…</div>
+<div id="panel">
+  <h2>MPFB Garments Proof</h2>
+  <p>Phase 1 core set, all on the same rig: Faith tee, Saint jacket, Black Cargos, Charcoal Joggers, field pouch, shaker, dogtags, bible. Swapping one item changes only that item.</p>
+  <label>Top
+    <select id="topSel">
+      <option value="base">Base tee</option>
+      <option value="faith">Faith tee</option>
+      <option value="saint">Saint jacket</option>
+    </select>
+  </label>
+  <label>Bottom
+    <select id="bottomSel">
+      <option value="shorts">Base shorts</option>
+      <option value="cargos">Black Cargos</option>
+      <option value="joggers">Charcoal Joggers</option>
+    </select>
+  </label>
+  <div class="row">
+    <label><input type="checkbox" id="pouchChk"> Pouch</label>
+    <label><input type="checkbox" id="shakerChk"> Shaker</label>
+    <label><input type="checkbox" id="dogtagsChk"> Dogtags</label>
+    <label><input type="checkbox" id="bibleChk"> Bible</label>
+    <label><input type="checkbox" id="stacheChk"> Moustache</label>
+    <label><input type="checkbox" id="nightChk"> Night mode</label>
+  </div>
+  <label>Mass <span id="massVal">100%</span></label>
+  <input type="range" id="massSlider" min="90" max="115" value="100">
+  <p>Drag to orbit · scroll/pinch to zoom. Compare with the <a href="char-3d-mpfb-proof.html" style="color:#8ecbff">base figure proof</a>.</p>
+</div>
+<div id="stats"></div>
+<div id="note"><b>Proof, not the app.</b> The app figure stays the v13 photo until garments are approved and integrated. If this page is opened from a file (not a web server), the model cannot load — it must be served over http(s), e.g. from GitHub Pages.</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const canvas = document.getElementById('c');
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x242428);
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 1.15, 3.4);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.95, 0);
+controls.enableDamping = true;
+controls.minDistance = 1.2;
+controls.maxDistance = 8;
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.9);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff2dd, 2.2);
+sun.position.set(2, 4, 3);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xbfd4ff, 0.5);
+fill.position.set(-2, 1.5, 3);
+scene.add(fill);
+
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(1.6, 48),
+  new THREE.MeshStandardMaterial({ color: 0x2c2c30, roughness: 1 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = 0.001;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const gradientMap = new THREE.DataTexture(new Uint8Array([90, 160, 255]), 3, 1, THREE.RedFormat);
+gradientMap.needsUpdate = true;
+gradientMap.minFilter = THREE.NearestFilter;
+gradientMap.magFilter = THREE.NearestFilter;
+
+const group = new THREE.Group();
+scene.add(group);
+let allMeshes = [];
+
+function toonMaterial(old) {
+  const map = old && old.map ? old.map : null;
+  const color = old && old.color ? old.color.clone() : new THREE.Color(0xcccccc);
+  const mat = new THREE.MeshToonMaterial({ color, gradientMap });
+  if (map) { mat.map = map; mat.color.set(0xffffff); }
+  // Transparent decals (FAITH patch) keep their alpha instead of a black box.
+  if (map && map.format === THREE.RGBAFormat) mat.transparent = true;
+  return mat;
+}
+function toonify(obj) {
+  obj.traverse((child) => {
+    if (!child.isMesh) return;
+    child.castShadow = true;
+    allMeshes.push(child);
+    if (Array.isArray(child.material)) child.material = child.material.map(toonMaterial);
+    else child.material = toonMaterial(child.material);
+  });
+}
+
+const topSel = document.getElementById('topSel');
+const bottomSel = document.getElementById('bottomSel');
+const pouchChk = document.getElementById('pouchChk');
+const shakerChk = document.getElementById('shakerChk');
+const dogtagsChk = document.getElementById('dogtagsChk');
+const bibleChk = document.getElementById('bibleChk');
+const stacheChk = document.getElementById('stacheChk');
+const nightChk = document.getElementById('nightChk');
+const massSlider = document.getElementById('massSlider');
+const massVal = document.getElementById('massVal');
+
+// URL params for shareable combos, e.g. ?top=faith&bottom=cargos&pouch=1&shaker=1&stache=1&mass=105&night=1
+const params = new URLSearchParams(location.search);
+if (params.get('top')) topSel.value = params.get('top');
+if (params.get('bottom')) bottomSel.value = params.get('bottom');
+if (params.get('pouch') === '1') pouchChk.checked = true;
+if (params.get('shaker') === '1') shakerChk.checked = true;
+if (params.get('dogtags') === '1') dogtagsChk.checked = true;
+if (params.get('bible') === '1') bibleChk.checked = true;
+if (params.get('stache') === '1') stacheChk.checked = true;
+if (params.get('night') === '1') nightChk.checked = true;
+if (params.get('mass')) massSlider.value = params.get('mass');
+
+function meshVisible(name) {
+  const top = topSel.value, bottom = bottomSel.value;
+  if (name.includes('BaseTee')) return top === 'base';
+  if (name.includes('Faith')) return top === 'faith';
+  if (name.includes('Saint')) return top === 'saint';
+  if (name.includes('BaseShorts')) return bottom === 'shorts';
+  if (name.includes('Cargos') || name.includes('CargoPocket')) return bottom === 'cargos';
+  if (name.includes('Jogger')) return bottom === 'joggers';
+  if (name.includes('Pouch')) return pouchChk.checked;
+  if (name.includes('Shaker') || name.includes('Fist')) return shakerChk.checked;
+  if (name.includes('Dogtags')) return dogtagsChk.checked;
+  if (name.includes('Bible')) return bibleChk.checked;
+  if (name.includes('Moustache')) return stacheChk.checked;
+  return true; // body, hair, boots, soles, eyes: always on
+}
+
+function applyState() {
+  const m = massSlider.value / 100;
+  group.scale.set(m, 1, m);
+  massVal.textContent = massSlider.value + '%';
+  for (const mesh of allMeshes) mesh.visible = meshVisible(mesh.name);
+  if (nightChk.checked) {
+    scene.background.set(0x070a18);
+    hemi.intensity = 0.25;
+    sun.intensity = 0.5;
+    sun.color.set(0x7a90ff);
+    fill.intensity = 0.25;
+    fill.color.set(0x5a70cc);
+    ground.material.color.set(0x11131f);
+  } else {
+    scene.background.set(0x242428);
+    hemi.intensity = 0.9;
+    sun.intensity = 2.2;
+    sun.color.set(0xfff2dd);
+    fill.intensity = 0.5;
+    fill.color.set(0xbfd4ff);
+    ground.material.color.set(0x2c2c30);
+  }
+}
+
+const loader = new GLTFLoader();
+loader.load('mpfb_garments.glb', (gltf) => {
+  const model = gltf.scene;
+  toonify(model);
+  group.add(model);
+  statusEl.style.display = 'none';
+  let tris = 0;
+  model.traverse((c) => { if (c.isMesh) tris += c.geometry.index ? c.geometry.index.count / 3 : c.geometry.attributes.position.count / 3; });
+  const names = [];
+  model.traverse((c) => { if (c.isMesh) names.push(c.name); });
+  document.getElementById('stats').textContent = Math.round(tris).toLocaleString() + ' triangles · ' + names.length + ' meshes';
+  console.log('MPFB garment meshes:', names);
+  applyState();
+}, undefined, (err) => {
+  statusEl.innerHTML = 'Could not load mpfb_garments.glb — this page must be served over http(s) with mpfb_garments.glb beside it.<br><span style="font-size:12px;color:#999">' + (err && err.message ? err.message : err) + '</span>';
+  console.error(err);
+});
+
+for (const el of [topSel, bottomSel, pouchChk, shakerChk, dogtagsChk, bibleChk, stacheChk, nightChk]) {
+  el.addEventListener('change', applyState);
+}
+massSlider.addEventListener('input', applyState);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
