@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Picture Form Guide</title>
+<title>Call of Gains</title>
 <meta name="description" content="Anthony's private training and food log.">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#0e1110">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Form Guide">
+<meta name="apple-mobile-web-app-title" content="Call of Gains">
 <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="./assets/icons/icon-192.png">
 <link rel="stylesheet" href="./styles.css">
@@ -21,7 +21,7 @@
 <div class="shop-bg" aria-hidden="true"><div class="shop-scene-wrap"><img class="shop-scene" src="./assets/shop/depot-scene.webp" alt=""><img class="shop-scene shop-scene-type" src="./assets/shop/depot-scene-type.webp" alt=""><div class="shop-scene-glow"></div><div class="shop-dust"></div></div><div class="bg-vignette"></div></div>
 <header>
   <div class="head-row1">
-    <div class="brand"><h1>Form Guide</h1><span class="depot-tag">DEPOT</span></div>
+    <div class="brand"><img class="brand-logo" src="./assets/logo-call-of-gains.webp" alt=""><h1>Call of Gains</h1></div>
     <span class="week-badge" id="weekBadge">Week —</span>
     <span class="coins-chip" id="coinsChip">🪙 0</span>
     <button class="icon-btn" id="muteBtn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
@@ -35,7 +35,7 @@
 </header>
 
 <nav class="sidebar" aria-label="Main">
-  <h2>Form Guide</h2>
+  <h2>Call of Gains</h2>
   <button data-tab="days" class="on">Days</button>
   <button data-tab="log">Log</button>
   <button data-tab="shop">Shop</button>
@@ -95,7 +95,7 @@
   <!-- ============ SHOP TAB ============ -->
   <section class="tab" id="tab-shop">
     <div class="depot-head">
-      <div><div class="eyebrow">MULTIPLAYER</div><h2>DEPOT</h2></div>
+      <div class="depot-title"><img class="depot-logo" src="./assets/logo-call-of-gains.webp" alt=""><div><div class="eyebrow">CALL OF GAINS</div><h2>DEPOT</h2></div></div>
       <div class="depot-bal">
         <span class="bal-line">🪙 <b id="shopCoins">0</b> War Coins</span>
         <span class="bal-line muted" id="shopOwned">0 owned</span>
@@ -269,6 +269,7 @@
         <button class="secondary" data-sound="gunfire">Gunfire (target celebration)</button>
         <button class="secondary" data-sound="levelup">Level-up · Your MP3</button>
         <button class="secondary" data-sound="claim">2× XP claim sting</button>
+        <button class="secondary" data-sound="coin">Coin · XP / War Coin earn</button>
         <button class="secondary" data-sound="unlock">Unlock sound</button>
         <button class="secondary" data-sound="crate">Crate sound</button>
         <button class="secondary" data-sound="reveal">Reveal sound</button>

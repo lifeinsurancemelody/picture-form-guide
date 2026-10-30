@@ -1855,8 +1855,11 @@ if (typeof document !== "undefined") {
       card.querySelector("[data-result]").innerHTML = "Saved: " + fmtWeight(ex, weight) + " × " + reps.join("/") + " — " + html;
       afterXp(res, null);
       if (!res.leveledUp) {
-        if (res.scored.label === "Move-up" || res.rolled !== null) { gunshotSound(); muzzleFlash(); }
-        else blip();
+        // Every lift save credits War Coins, so the earn sound replaces the
+        // generic blip here; move-up saves keep their gunshot, with the
+        // coin landing just after it. A leveling save plays the MP3 only.
+        if (res.scored.label === "Move-up" || res.rolled !== null) { gunshotSound(); muzzleFlash(); coinSound(0.45); }
+        else coinSound();
       }
       renderHeader();
       notifyAwards();
@@ -1909,7 +1912,12 @@ if (typeof document !== "undefined") {
     $("foodName").value = ""; $("foodCal").value = ""; $("foodProtein").value = "";
     renderFood(); renderHeader();
     afterXp(res, "Logged <b>" + esc(name) + "</b> — " + cal + " cal · " + protein + "g protein. Running total: " + res.totals.cal.toLocaleString() + " cal · " + res.totals.protein + "g protein." + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
-    blip();
+    // One coin sound per save moment, and only when a fuel bonus actually
+    // paid (both bonuses landing together still play once); a plain food
+    // log keeps the generic blip, and a leveling save plays the MP3 only.
+    if (res.leveledUp) { /* MP3 already played by afterXp */ }
+    else if (res.coinsEarned > 0) coinSound();
+    else blip();
     notifyAwards();
   });
 
@@ -2041,21 +2049,40 @@ if (typeof document !== "undefined") {
       const pr = questProgress(state, q, qb.week);
       return `<div class="quest-row"><div><b>${esc(q.name)}</b> <span class="muted">· ${esc(q.desc)}</span></div><div class="meter"><div style="width:${pr.target ? Math.round(pr.current / pr.target * 100) : 0}%"></div></div><span>${pr.current}/${pr.target} · +${q.xp} XP · +${q.wc} WC ${pr.done ? `<button class="small claim-btn" data-claim-quest="${q.id}">CLAIM</button>` : ""}</span></div>`;
     }).join("") + (claimableQ.length ? `<p><button class="small claim-btn" data-claim-all-quest>Claim all (${claimableQ.length})</button></p>` : "") + (qb.claimed.length ? `<p class="muted">Claimed this week: ` + qb.claimed.map((id) => esc(QUEST_BY_ID[id] ? QUEST_BY_ID[id].name : id)).join(", ") + `</p>` : "") + `<p class="muted">Quests refresh every Monday. Completed quests pay XP + War Coins when claimed.</p>`;
+    /* Claim celebrations: the claim sting + spark burst are the claim moment;
+       when the claim levels him up, the session-style level-up celebration
+       (MP3 + level-up banner, via afterXp) fires instead of the sting, with
+       the claim detail appended to the banner — same as a session level-up.
+       Claim All fires exactly one level-up celebration at the final level.
+       The coin sound marks the XP/WC credit: once per claim moment (not
+       per reward line), landing just after the sting; a leveling claim
+       plays the MP3 only, same precedence as the sting. */
+    function celebrateClaim(btn, res, html) {
+      sparkBurst(btn);
+      if (res && res.leveledUp) afterXp(res, html);
+      else { claimSting(); coinSound(0.3); showBanner(html); }
+    }
+    function celebrateClaimAll(btn, results, html) {
+      sparkBurst(btn);
+      if (results.some((x) => x.leveledUp)) {
+        afterXp({ leveledUp: true, newLevel: results[results.length - 1].newLevel }, html);
+      } else { claimSting(); coinSound(0.3); showBanner(html); }
+    }
     $("achievementsBox").querySelectorAll("[data-claim-ach]").forEach((b) => b.addEventListener("click", () => {
       const r = claimAchievement(state, b.dataset.claimAch);
-      if (r) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
+      if (r) { persist(); renderProgress(); renderHeader(); celebrateClaim(b, r, "🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
     }));
     $("achievementsBox").querySelectorAll("[data-claim-all-ach]").forEach((b) => b.addEventListener("click", () => {
       const rs = claimAllAchievements(state);
-      if (rs.length) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
+      if (rs.length) { persist(); renderProgress(); renderHeader(); celebrateClaimAll(b, rs, "🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
     }));
     $("questsBox").querySelectorAll("[data-claim-quest]").forEach((b) => b.addEventListener("click", () => {
       const r = claimQuest(state, b.dataset.claimQuest);
-      if (r) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
+      if (r) { persist(); renderProgress(); renderHeader(); celebrateClaim(b, r, "✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); }
     }));
     $("questsBox").querySelectorAll("[data-claim-all-quest]").forEach((b) => b.addEventListener("click", () => {
       const rs = claimAllQuests(state);
-      if (rs.length) { persist(); renderProgress(); renderHeader(); claimSting(); showBanner("✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
+      if (rs.length) { persist(); renderProgress(); renderHeader(); celebrateClaimAll(b, rs, "✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); }
     }));
     applyCollapse();
   }
@@ -2087,7 +2114,7 @@ if (typeof document !== "undefined") {
   $("stingerBtn").addEventListener("click", () => prestigeStinger());
   /* ----- Sounds tab: one test button per sound function ----- */
   document.querySelectorAll("[data-sound]").forEach((b) => b.addEventListener("click", () => {
-    const fn = { gunfire: gunshotSound, levelup: playLevelUp, claim: claimSting, unlock: unlockSound, crate: crateSound, reveal: revealSound, prestige: prestigeStinger }[b.dataset.sound];
+    const fn = { gunfire: gunshotSound, levelup: playLevelUp, claim: claimSting, coin: coinSound, unlock: unlockSound, crate: crateSound, reveal: revealSound, prestige: prestigeStinger }[b.dataset.sound];
     if (fn) fn();
   }));
   $("addWeightBtn").addEventListener("click", () => {
@@ -2096,7 +2123,10 @@ if (typeof document !== "undefined") {
     const res = addWeightToState(state, d, w);
     persist(); renderProgress(); renderHeader();
     afterXp(res, (res.gained ? "Weigh-in logged: " + w + " lbs — weekly average gain, +2 XP." : "Weigh-in logged: " + w + " lbs.") + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
-    blip();
+    // A weigh-in always credits War Coins (plus XP on a weekly gain), so
+    // the earn sound replaces the generic blip; a leveling save plays
+    // the MP3 only.
+    if (!res.leveledUp) coinSound();
     notifyAwards();
   });
   $("muteBtn").addEventListener("click", () => { state.muted = !state.muted; persist(); renderHeader(); if (state.muted) stopShopAmbience(); else { const shopTab = document.getElementById("tab-shop"); if (shopTab && shopTab.classList.contains("active")) startShopAmbience(); } });
@@ -2125,7 +2155,7 @@ if (typeof document !== "undefined") {
         persist();
         $("backupMsg").textContent = "Backup imported. XP: " + state.xpTotal + ", sessions: " + state.sessions.length + ".";
         renderHeader(); renderDays(); renderLog(); renderFood(); renderProgress();
-      } catch (e) { $("backupMsg").textContent = "That file is not a valid Form Guide backup."; }
+      } catch (e) { $("backupMsg").textContent = "That file is not a valid Call of Gains backup."; }
     };
     reader.readAsText(file);
     ev.target.value = "";
@@ -2179,6 +2209,18 @@ if (typeof document !== "undefined") {
   function claimSting() { // rising arpeggio + brass chord
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, "triangle", 0.09, i * 0.08));
     [523, 659, 784].forEach((f) => tone(f, 0.6, "sawtooth", 0.03, 0.34));
+  }
+  function coinSound(delay) { // coin clinks + cash-register cha-ching (~0.45s)
+    // Built on tone(), which is itself mute-gated; the explicit guard keeps
+    // the mute rule obvious at every call site. Peak 0.07 sits with the
+    // claim sting (0.09) and below the level-up MP3. Optional delay (s)
+    // lets callers land the coin just after a sting/reveal/gunshot.
+    if (state.muted) return;
+    const d = delay || 0;
+    tone(2093, 0.18, "sine", 0.07, d);        // coin ping
+    tone(2637, 0.22, "sine", 0.05, d + 0.02); // bright partial shimmer
+    tone(1568, 0.12, "triangle", 0.06, d + 0.12); // register cha-
+    tone(2093, 0.25, "triangle", 0.06, d + 0.18); // -ching tail
   }
   function prestigeStinger() { // boom + chord
     noiseBurst(0, 0.5, 180, 0.16);
@@ -2263,6 +2305,7 @@ if (typeof document !== "undefined") {
     hideModal("dupModal");
     renderShop(); renderHeader();
     showBanner("Scrapped <b>" + esc(item ? item.name : "duplicate") + "</b> for <b>+" + pend.scrap + " War Coins</b>.");
+    coinSound(); // scrap WC credited
     notifyAwards();
   });
 
@@ -2448,6 +2491,7 @@ if (typeof document !== "undefined") {
         $("crateActions").querySelector("#crateCloseBtn").addEventListener("click", () => hideModal("crateModal"));
       } else if (res.kind === "coins") {
         state.coins += res.amount;
+        coinSound(0.3); // War Coins credited — lands just after the reveal arpeggio
         persist();
         $("crateTitle").textContent = crate.name.toUpperCase() + " — WAR COINS";
         $("crateBody").innerHTML = `<p class="big-reward">+${res.amount} WC</p><p class="muted">Straight into your balance.</p>`;
