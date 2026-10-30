@@ -470,6 +470,22 @@ function addXp(state, n) {
   state.xpTotal = Math.min(XP_CAP, state.xpTotal + n);
   return { leveledUp: levelForXp(state.xpTotal) > before, newLevel: levelForXp(state.xpTotal) };
 }
+/* Prestige names, 1–10, as shown by the old app's PromotionCelebration.
+   Endpoints confirmed (1 = Bronze Star, 10 = Crimson Star); the middle
+   rungs are a provisional star ladder — correct this list if the old app
+   used different names. Past 10 the name clamps to Crimson Star. */
+const PRESTIGE_NAMES = ["Bronze Star", "Iron Cross", "Winged Star", "Silver Star",
+  "Silver Eagle", "Compass Star", "Starburst Medallion", "Golden Sunburst", "Winged Jewel", "Crimson Star"];
+function prestigeName(n) { return PRESTIGE_NAMES[Math.max(1, Math.min(10, n || 1)) - 1]; }
+/* Promotion check (pure): snapshot {level, prestige} before an XP credit,
+   compare after. Prestige takes precedence over a level gain; a level drop
+   (a re-save that removes XP, a food-delete clawback) is never a promotion. */
+function snapshotProgress(st) { return { level: levelForXp(st.xpTotal), prestige: st.prestige || 0 }; }
+function promotionFrom(before, after) {
+  if (after.prestige > before.prestige) return { kind: "prestige", prestige: after.prestige };
+  if (after.level > before.level) return { kind: "level", level: after.level, gained: after.level - before.level };
+  return null;
+}
 /* Prestige: at 200 XP the cycle banks one prestige and restarts at 0 XP /
    Level 1. ONLY the XP/level cycle resets — War Coins, owned items,
    equipped/character, history, weights, and banked/active double-XP charges
@@ -1564,7 +1580,8 @@ if (typeof module !== "undefined" && module.exports) {
     syncArtifactSnapshot, SYNC_TARGETS, SYNC_SESSIONS, SEED_LABELS,
     charImageFor, charTier, charBulk, WORN_PHOTO,
     buildCharacterSvg, previewSvg, slotFilter, eraBadge, eraMatches,
-    prestigeToState, ACHIEVEMENTS, QUESTS, ACH_BY_ID, QUEST_BY_ID, ACH_BOARD_SIZE,
+    prestigeToState, PRESTIGE_NAMES, prestigeName, snapshotProgress, promotionFrom,
+    ACHIEVEMENTS, QUESTS, ACH_BY_ID, QUEST_BY_ID, ACH_BOARD_SIZE,
     QUEST_BOARD_SIZE, achievementEarned, awardAchievements, ensureAchievementBoard,
     claimableAchievements, claimAchievement, claimAllAchievements, questProgress,
     ensureQuestBoard, claimableQuests, claimQuest, claimAllQuests, checkQuests };
@@ -1681,36 +1698,67 @@ if (typeof document !== "undefined") {
     clearTimeout(showBanner._t);
     showBanner._t = setTimeout(() => { b.innerHTML = ""; }, 8000);
   }
-  function afterXp(info, extraHtml) {
-    if (info && info.leveledUp) {
-      playLevelUp();
-      showBanner("🎉 Level up! You are now <b>Level " + info.newLevel + " · " + esc(rankForLevel(info.newLevel)) + "</b>" + (extraHtml || ""));
-      showLevelUpOverlay(info, extraHtml);
-    } else if (extraHtml) {
-      showBanner(extraHtml);
-    }
+  /* Promotion celebration: faithful port of the old app's full-screen
+     PromotionCelebration — fixed inset-0 overlay (pointer-events none, so
+     it never blocks taps), dark radial background, scanlines, 4 burst
+     rays, 2 expanding rings, 10 sparks around a POPPING emblem, 4.6s
+     total with the fade-out starting ~4.1s. Level variant: "Rank
+     advanced" / "LEVEL UP" / rank name / "Level X secured" (+ "· N levels
+     gained" when one credit crosses more than one level), emblem = that
+     level's rank insignia. Prestige variant: "Tour complete" / "Prestige
+     N" / prestige name / "New combat crest unlocked · level ladder
+     reset", emblem = the prestige photo. Level plays the WaW MP3,
+     prestige the stinger; muted phones see the visual silently (both
+     sound functions are mute-gated). Promotions queue: one on screen at
+     a time, none dropped, none stacked visually. */
+  const promoQueue = [];
+  let promoShowing = false;
+  function queuePromotion(promo) {
+    promoQueue.push(promo);
+    pumpPromotions();
   }
-  /* Rank-up overlay: a centered, fixed card that cannot be missed the way
-     the in-flow banner can (the banner sits at the top of the page, so a
-     claim tapped while scrolled down to the Progress boxes never showed
-     it). Tap anywhere to dismiss; auto-dismisses after 8s like the banner. */
-  function showLevelUpOverlay(info, extraHtml) {
+  function pumpPromotions() {
+    if (promoShowing || promoQueue.length === 0) return;
+    promoShowing = true;
+    const promo = promoQueue.shift();
+    let ov = null;
     try {
-      const old = document.getElementById("levelupOverlay");
-      if (old) old.remove();
-      const ov = document.createElement("div");
-      ov.id = "levelupOverlay";
-      ov.className = "levelup-overlay";
-      ov.innerHTML = `<div class="levelup-card">` + rankInsigniaSvg(info.newLevel, 64) +
-        `<div class="levelup-title">🎉 LEVEL UP!</div>` +
-        `<div class="levelup-rank">Level ` + info.newLevel + ` · ` + esc(rankForLevel(info.newLevel)) + `</div>` +
-        (extraHtml ? `<div class="levelup-detail">` + extraHtml + `</div>` : "") +
-        `<button class="levelup-dismiss">Nice</button></div>`;
-      ov.addEventListener("click", () => ov.remove());
+      ov = document.createElement("div");
+      ov.className = "promo-celebration";
+      const isPrestige = promo.kind === "prestige";
+      const emblem = isPrestige
+        ? `<img class="promo-emblem-photo" src="./assets/prestige/prestige-${Math.min(10, promo.prestige)}.jpg" alt="Prestige ${promo.prestige} emblem">`
+        : `<div class="promo-emblem-svg">${rankInsigniaSvg(promo.level, 110)}</div>`;
+      const rays = [0, 45, 90, 135].map((d) => `<span class="promo-ray" style="transform:rotate(${d}deg)"></span>`).join("");
+      const sparks = Array.from({ length: 10 }, (_, i) => `<span class="promo-spark" style="--a:${i * 36}deg"></span>`).join("");
+      ov.innerHTML = `<div class="promo-scanlines"></div><div class="promo-rays">${rays}</div>` +
+        `<div class="promo-ring"></div><div class="promo-ring ring2"></div>` +
+        `<div class="promo-sparks">${sparks}</div>` +
+        `<div class="promo-emblem">${emblem}</div>` +
+        `<div class="promo-kicker">${isPrestige ? "Tour complete" : "Rank advanced"}</div>` +
+        `<div class="promo-title">${isPrestige ? "Prestige " + promo.prestige : "LEVEL UP"}</div>` +
+        `<div class="promo-name">${esc(isPrestige ? prestigeName(promo.prestige) : rankForLevel(promo.level))}</div>` +
+        `<div class="promo-detail">${isPrestige ? "New combat crest unlocked · level ladder reset" : "Level " + promo.level + " secured" + (promo.gained > 1 ? " · " + promo.gained + " levels gained" : "")}</div>`;
       document.body.appendChild(ov);
-      clearTimeout(showLevelUpOverlay._t);
-      showLevelUpOverlay._t = setTimeout(() => ov.remove(), 8000);
+      if (isPrestige) prestigeStinger(); else playLevelUp();
     } catch (e) {}
+    setTimeout(() => {
+      try { if (ov) ov.remove(); } catch (e) {}
+      promoShowing = false;
+      pumpPromotions();
+    }, 4600);
+  }
+  /* Shared promotion gate for EVERY XP credit path: snapshot BEFORE the
+     credit, call this AFTER. Returns true when a promotion was queued
+     (callers use it to suppress their non-promotion sounds). A detail
+     line still goes to the banner in both cases, so food / weigh-in /
+     claim text is never lost to the overlay. Within-level credits get no
+     promotion — just the banner, if they carry a detail line. */
+  function celebrateProgress(before, detailHtml) {
+    const promo = promotionFrom(before, snapshotProgress(state));
+    if (promo) queuePromotion(promo);
+    if (detailHtml) showBanner(detailHtml);
+    return !!promo;
   }
   /* Award + quest notifications: completed entries pay when claimed. */
   function notifyAwards() {
@@ -1865,6 +1913,7 @@ if (typeof document !== "undefined") {
       const reps = [...card.querySelectorAll("[data-set]")].map((i) => parseInt(i.value, 10)).filter((n) => !isNaN(n));
       const goalHit = card.querySelector("[data-goal]").checked;
       if (isNaN(weight) || reps.length === 0) { alert("Enter a weight and at least one set of reps."); return; }
+      const before = snapshotProgress(state);
       const res = saveLiftToState(state, dateKey(new Date()), logDay, exId, weight, reps, goalHit);
       delete logPrefill[exId]; // a saved prefill is spent
       persist();
@@ -1876,11 +1925,11 @@ if (typeof document !== "undefined") {
       if (res.coinsEarned > 0) html += ` · <span class="gold">+${res.coinsEarned} WC</span>`;
       if (res.rolled !== null) html += ` · 🎯 Target rolled up to ${fmtWeight(ex, res.rolled)} — a 2× charge is banked, claim it in Progress.`;
       card.querySelector("[data-result]").innerHTML = "Saved: " + fmtWeight(ex, weight) + " × " + reps.join("/") + " — " + html;
-      afterXp(res, null);
-      if (!res.leveledUp) {
+      const promoted = celebrateProgress(before, null);
+      if (!promoted) {
         // Every lift save credits War Coins, so the earn sound replaces the
         // generic blip here; move-up saves keep their gunshot, with the
-        // coin landing just after it. A leveling save plays the MP3 only.
+        // coin landing just after it. A promotion save plays the MP3 only.
         if (res.scored.label === "Move-up" || res.rolled !== null) { gunshotSound(); muzzleFlash(); coinSound(0.45); }
         else coinSound();
       }
@@ -1930,15 +1979,16 @@ if (typeof document !== "undefined") {
     const cal = parseInt($("foodCal").value, 10), protein = parseInt($("foodProtein").value, 10);
     if (!name || isNaN(cal) || isNaN(protein)) { alert("Enter a food name, calories, and protein."); return; }
     const now = new Date();
+    const before = snapshotProgress(state);
     const res = addFoodToState(state, name, cal, protein, dateKey(now), String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"));
     persist();
     $("foodName").value = ""; $("foodCal").value = ""; $("foodProtein").value = "";
     renderFood(); renderHeader();
-    afterXp(res, "Logged <b>" + esc(name) + "</b> — " + cal + " cal · " + protein + "g protein. Running total: " + res.totals.cal.toLocaleString() + " cal · " + res.totals.protein + "g protein." + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
+    const promoted = celebrateProgress(before, "Logged <b>" + esc(name) + "</b> — " + cal + " cal · " + protein + "g protein. Running total: " + res.totals.cal.toLocaleString() + " cal · " + res.totals.protein + "g protein." + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
     // One coin sound per save moment, and only when a fuel bonus actually
     // paid (both bonuses landing together still play once); a plain food
-    // log keeps the generic blip, and a leveling save plays the MP3 only.
-    if (res.leveledUp) { /* MP3 already played by afterXp */ }
+    // log keeps the generic blip, and a promotion save plays the MP3 only.
+    if (promoted) { /* MP3 already played by the promotion */ }
     else if (res.coinsEarned > 0) coinSound();
     else blip();
     notifyAwards();
@@ -2073,50 +2123,56 @@ if (typeof document !== "undefined") {
       return `<div class="quest-row"><div><b>${esc(q.name)}</b> <span class="muted">· ${esc(q.desc)}</span></div><div class="meter"><div style="width:${pr.target ? Math.round(pr.current / pr.target * 100) : 0}%"></div></div><span>${pr.current}/${pr.target} · +${q.xp} XP · +${q.wc} WC ${pr.done ? `<button class="small claim-btn" data-claim-quest="${q.id}">CLAIM</button>` : ""}</span></div>`;
     }).join("") + (claimableQ.length ? `<p><button class="small claim-btn" data-claim-all-quest>Claim all (${claimableQ.length})</button></p>` : "") + (qb.claimed.length ? `<p class="muted">Claimed this week: ` + qb.claimed.map((id) => esc(QUEST_BY_ID[id] ? QUEST_BY_ID[id].name : id)).join(", ") + `</p>` : "") + `<p class="muted">Quests refresh every Monday. Completed quests pay XP + War Coins when claimed.</p>`;
     /* Claim celebrations: the claim sting + spark burst are the claim moment;
-       when the claim levels him up, the session-style level-up celebration
-       (MP3 + level-up banner, via afterXp) fires instead of the sting, with
-       the claim detail appended to the banner — same as a session level-up.
-       Claim All fires exactly one level-up celebration at the final level.
-       The coin sound marks the XP/WC credit: once per claim moment (not
-       per reward line), landing just after the sting; a leveling claim
-       plays the MP3 only, same precedence as the sting. */
-    function celebrateClaim(btn, res, html) {
+       when the claim crosses a level boundary, the full-screen promotion
+       fires instead of the sting (same shared before/after check as every
+       other XP path), with the claim detail still going to the banner.
+       Claim All snapshots once around the whole batch, so it fires exactly
+       one promotion at the final level (with "N levels gained" when the
+       batch crosses more than one). The coin sound marks the XP/WC credit:
+       once per claim moment (not per reward line), landing just after the
+       sting; a promotion claim plays the MP3 only, same precedence as the
+       sting. Within-level claims keep only this claim celebration — no
+       promotion is added to them. Celebrate BEFORE re-rendering so the
+       spark burst reads the still-attached tapped button. */
+    function celebrateClaim(btn, before, html) {
       sparkBurst(btn);
-      if (res && res.leveledUp) afterXp(res, html);
-      else { claimSting(); coinSound(0.3); showBanner(html); }
-    }
-    function celebrateClaimAll(btn, results, html) {
-      sparkBurst(btn);
-      if (results.some((x) => x.leveledUp)) {
-        afterXp({ leveledUp: true, newLevel: results[results.length - 1].newLevel }, html);
-      } else { claimSting(); coinSound(0.3); showBanner(html); }
+      if (!celebrateProgress(before, html)) { claimSting(); coinSound(0.3); }
     }
     $("achievementsBox").querySelectorAll("[data-claim-ach]").forEach((b) => b.addEventListener("click", () => {
+      const before = snapshotProgress(state);
       const r = claimAchievement(state, b.dataset.claimAch);
-      if (r) { persist(); celebrateClaim(b, r, "🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); renderProgress(); renderHeader(); }
+      if (r) { persist(); celebrateClaim(b, before, "🏆 " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     $("achievementsBox").querySelectorAll("[data-claim-all-ach]").forEach((b) => b.addEventListener("click", () => {
+      const before = snapshotProgress(state);
       const rs = claimAllAchievements(state);
-      if (rs.length) { persist(); celebrateClaimAll(b, rs, "🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); renderProgress(); renderHeader(); }
+      if (rs.length) { persist(); celebrateClaim(b, before, "🏆 Claimed " + rs.length + " achievements: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     $("questsBox").querySelectorAll("[data-claim-quest]").forEach((b) => b.addEventListener("click", () => {
+      const before = snapshotProgress(state);
       const r = claimQuest(state, b.dataset.claimQuest);
-      if (r) { persist(); celebrateClaim(b, r, "✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); renderProgress(); renderHeader(); }
+      if (r) { persist(); celebrateClaim(b, before, "✅ " + esc(r.name) + " claimed: <b>+" + r.xp + " XP · +" + r.wc + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     $("questsBox").querySelectorAll("[data-claim-all-quest]").forEach((b) => b.addEventListener("click", () => {
+      const before = snapshotProgress(state);
       const rs = claimAllQuests(state);
-      if (rs.length) { persist(); celebrateClaimAll(b, rs, "✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); renderProgress(); renderHeader(); }
+      if (rs.length) { persist(); celebrateClaim(b, before, "✅ Claimed " + rs.length + " quests: <b>+" + rs.reduce((t, r) => t + r.xp, 0) + " XP · +" + rs.reduce((t, r) => t + r.wc, 0) + " War Coins</b>."); renderProgress(); renderHeader(); }
     }));
     applyCollapse();
   }
   $("claimBtn").addEventListener("click", () => doClaim($("claimBtn")));
   $("headClaimBtn").addEventListener("click", () => doClaim($("headClaimBtn")));
   $("prestigeBtn").addEventListener("click", () => {
+    const before = snapshotProgress(state);
     if (!prestigeToState(state)) return;
     const freshA = awardAchievements(state);
     const freshQ = checkQuests(state);
     persist();
-    prestigeStinger();
+    // The prestige promotion (photo emblem + prestige name + stinger) fires
+    // through the same shared check; prestige takes precedence over the
+    // level drop back to 1. The banner below still carries the carry-over
+    // note and any freshly completed rewards.
+    celebrateProgress(before, null);
     let msg = "🎖 Prestige " + state.prestige + "! XP reset to 0 — the climb starts again at Level 1. Coins, gear, history, and double-XP charges all carry over.";
     freshA.forEach((a) => { msg += "<br>🏆 Achievement: <b>" + esc(a.name) + "</b> (+" + a.xp + " XP · +" + a.wc + " WC — claim on Progress)"; });
     freshQ.forEach((q) => { msg += "<br>✅ Quest complete: <b>" + esc(q.name) + "</b> (+" + q.xp + " XP · +" + q.wc + " WC — claim on Progress)"; });
@@ -2143,13 +2199,14 @@ if (typeof document !== "undefined") {
   $("addWeightBtn").addEventListener("click", () => {
     const d = $("weightDate").value, w = parseFloat($("weightVal").value);
     if (!d || isNaN(w)) { alert("Enter a date and a weight."); return; }
+    const before = snapshotProgress(state);
     const res = addWeightToState(state, d, w);
     persist(); renderProgress(); renderHeader();
-    afterXp(res, (res.gained ? "Weigh-in logged: " + w + " lbs — weekly average gain, +2 XP." : "Weigh-in logged: " + w + " lbs.") + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
+    const promoted = celebrateProgress(before, (res.gained ? "Weigh-in logged: " + w + " lbs — weekly average gain, +2 XP." : "Weigh-in logged: " + w + " lbs.") + (res.coinsEarned > 0 ? " · +" + res.coinsEarned + " WC" : ""));
     // A weigh-in always credits War Coins (plus XP on a weekly gain), so
-    // the earn sound replaces the generic blip; a leveling save plays
+    // the earn sound replaces the generic blip; a promotion save plays
     // the MP3 only.
-    if (!res.leveledUp) coinSound();
+    if (!promoted) coinSound();
     notifyAwards();
   });
   $("muteBtn").addEventListener("click", () => { state.muted = !state.muted; persist(); renderHeader(); if (state.muted) stopShopAmbience(); else { const shopTab = document.getElementById("tab-shop"); if (shopTab && shopTab.classList.contains("active")) startShopAmbience(); } });

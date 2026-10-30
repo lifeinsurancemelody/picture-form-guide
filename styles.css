@@ -178,14 +178,35 @@ header {
 }
 .banner:empty { display: none; }
 
-/* Rank-up overlay: centered, fixed, unmissable even when scrolled down. */
-.levelup-overlay { position: fixed; inset: 0; z-index: 400; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); padding: 20px; }
-.levelup-card { background: rgba(42,36,16,0.97); border: 2px solid var(--gold); border-radius: var(--radius); padding: 22px 20px; text-align: center; max-width: 320px; width: 100%; }
-.levelup-card svg { margin-bottom: 8px; }
-.levelup-title { font-size: 22px; font-weight: 800; letter-spacing: 1px; margin-bottom: 6px; }
-.levelup-rank { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
-.levelup-detail { font-size: 14px; margin-bottom: 14px; }
-.levelup-dismiss { font-size: 16px; padding: 10px 26px; }
+/* Promotion celebration: faithful port of the old app's full-screen
+   PromotionCelebration. Fixed inset 0, topmost, pointer-events none (it
+   never blocks taps), dark radial background, scanlines, 4 burst rays, 2
+   expanding rings, 10 sparks around a popping emblem. 4.6s total; the
+   fade-out starts ~4.1s (89% of the run) and JS removes the node at 4.6s. */
+.promo-celebration { position: fixed; inset: 0; z-index: 400; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 20px; text-align: center; overflow: hidden; background: radial-gradient(ellipse at center, rgba(64,56,20,0.97) 0%, rgba(10,12,7,0.98) 70%); animation: promoLife 4.6s ease forwards; }
+@keyframes promoLife { 0% { opacity: 0; } 4% { opacity: 1; } 89% { opacity: 1; } 100% { opacity: 0; } }
+.promo-scanlines { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 4px); }
+.promo-rays { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.promo-ray { position: absolute; left: -14px; top: -260px; width: 28px; height: 520px; background: linear-gradient(180deg, transparent, rgba(200,168,74,0.35) 45%, rgba(200,168,74,0.55) 50%, rgba(200,168,74,0.35) 55%, transparent); transform-origin: 50% 260px; animation: promoRayPulse 1.6s ease-in-out infinite alternate; }
+@keyframes promoRayPulse { from { opacity: 0.4; } to { opacity: 0.9; } }
+.promo-ring { position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; margin: -95px 0 0 -95px; border: 2px solid var(--gold); border-radius: 50%; animation: promoRing 1.8s ease-out infinite; }
+.promo-ring.ring2 { animation-delay: 0.9s; }
+@keyframes promoRing { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(2.2); opacity: 0; } }
+.promo-sparks { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.promo-spark { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px var(--gold); transform: rotate(var(--a)) translateY(-125px); animation: promoSpark 1.1s ease-in-out infinite alternate; }
+.promo-spark:nth-child(2n) { animation-delay: 0.25s; }
+.promo-spark:nth-child(3n) { animation-delay: 0.5s; }
+@keyframes promoSpark { from { opacity: 0.25; } to { opacity: 1; } }
+.promo-emblem { position: relative; margin-bottom: 10px; animation: promoPop 0.55s cubic-bezier(.2,1.4,.4,1) both; filter: drop-shadow(0 0 18px rgba(200,168,74,0.55)); }
+@keyframes promoPop { from { transform: scale(0.3); } to { transform: scale(1); } }
+.promo-emblem-photo { width: 120px; height: 120px; object-fit: cover; border-radius: 16px; border: 3px solid var(--gold); display: block; }
+.promo-kicker { position: relative; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+.promo-title { position: relative; font-size: 34px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 2px 12px rgba(0,0,0,0.8); }
+.promo-name { position: relative; font-size: 20px; font-weight: 800; color: var(--gold); }
+.promo-detail { position: relative; font-size: 14px; color: var(--dim); }
+@media (prefers-reduced-motion: reduce) {
+  .promo-ray, .promo-ring, .promo-spark, .promo-emblem { animation: none !important; }
+}
 
 /* Day switcher + jump chips */
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
