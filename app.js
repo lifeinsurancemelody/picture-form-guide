@@ -401,6 +401,7 @@ function seedState() {
     facialHair: "clean",
     figureVariant: "standard",
     prestige: 0,
+    prestigeDates: [],
     achievements: [],
     achievementsClaimed: {},
     achievementBoard: [],
@@ -470,10 +471,8 @@ function addXp(state, n) {
   state.xpTotal = Math.min(XP_CAP, state.xpTotal + n);
   return { leveledUp: levelForXp(state.xpTotal) > before, newLevel: levelForXp(state.xpTotal) };
 }
-/* Prestige names, 1–10, as shown by the old app's PromotionCelebration.
-   Endpoints confirmed (1 = Bronze Star, 10 = Crimson Star); the middle
-   rungs are a provisional star ladder — correct this list if the old app
-   used different names. Past 10 the name clamps to Crimson Star. */
+/* Prestige names, 1–10, verbatim from the old app's PromotionCelebration.
+   Past 10 the name clamps to Crimson Star. */
 const PRESTIGE_NAMES = ["Bronze Star", "Iron Cross", "Winged Star", "Silver Star",
   "Silver Eagle", "Compass Star", "Starburst Medallion", "Golden Sunburst", "Winged Jewel", "Crimson Star"];
 function prestigeName(n) { return PRESTIGE_NAMES[Math.max(1, Math.min(10, n || 1)) - 1]; }
@@ -494,6 +493,8 @@ function prestigeToState(state) {
   if (!state || state.xpTotal < XP_CAP) return false;
   state.prestige = (state.prestige || 0) + 1;
   state.xpTotal = 0;
+  if (!Array.isArray(state.prestigeDates)) state.prestigeDates = [];
+  state.prestigeDates.push(dateKey(new Date()));
   return true;
 }
 /* Save one lift. Merges into the day's session; never wipes other lifts.
@@ -855,6 +856,18 @@ function questProgress(state, quest, weekKey) {
    Monday rollover (weekKey change) rotates to the next 6 pool quests in pool
    order, wrapping around. Within a week, a claimed quest's slot refills from
    the pool, excluding active and already-claimed-this-week entries. */
+/* Quest claimed entries are { id, date } since v17 (date stamped at claim
+   time). Older states carry bare id strings; those migrate to
+   { id, date: null } ("claimed this week, exact day unknown") and are read
+   through these helpers everywhere, so old and new shapes behave alike. */
+function questClaimedIds(board) {
+  if (!board || !Array.isArray(board.claimed)) return [];
+  return board.claimed.map((c) => (typeof c === "string" ? c : (c && c.id))).filter(Boolean);
+}
+function questClaimEntries(board) {
+  if (!board || !Array.isArray(board.claimed)) return [];
+  return board.claimed.map((c) => (typeof c === "string" ? { id: c, date: null } : { id: c.id, date: c.date || null })).filter((e) => e.id);
+}
 function ensureQuestBoard(state) {
   if (!state.questBoard || typeof state.questBoard !== "object" || !Array.isArray(state.questBoard.active)) {
     state.questBoard = { week: null, active: [], claimed: [], rotation: 0 };
@@ -873,7 +886,7 @@ function ensureQuestBoard(state) {
   }
   const b = state.questBoard;
   b.active = b.active.filter((id) => id === null || QUEST_BY_ID[id]);
-  const used = new Set([...b.active.filter(Boolean), ...b.claimed]);
+  const used = new Set([...b.active.filter(Boolean), ...questClaimedIds(b)]);
   for (let i = 0; i < b.active.length; i++) {
     if (b.active[i] !== null) continue;
     const q = QUESTS.find((x) => !used.has(x.id));
@@ -889,7 +902,7 @@ function ensureQuestBoard(state) {
 }
 function claimableQuests(state) {
   const b = ensureQuestBoard(state);
-  return b.active.filter((id) => id && questProgress(state, QUEST_BY_ID[id], b.week).done && !b.claimed.includes(id));
+  return b.active.filter((id) => id && questProgress(state, QUEST_BY_ID[id], b.week).done && !questClaimedIds(b).includes(id));
 }
 /* Pays the quest reward at face value (never doubled) plus War Coins.
    Guarded on board + claimed state, so double-claims are impossible. The
@@ -898,12 +911,12 @@ function claimQuest(state, id) {
   const b = ensureQuestBoard(state);
   const q = QUEST_BY_ID[id];
   if (!q || !b.active.includes(id)) return null;
-  if (b.claimed.includes(id)) return null;
+  if (questClaimedIds(b).includes(id)) return null;
   if (!questProgress(state, q, b.week).done) return null;
   const r = addXp(state, q.xp);
   state.coins += q.wc;
-  b.claimed.push(id);
-  const used = new Set([...b.active.filter(Boolean), ...b.claimed]);
+  b.claimed.push({ id, date: dateKey(new Date()) });
+  const used = new Set([...b.active.filter(Boolean), ...questClaimedIds(b)]);
   const refill = QUESTS.find((x) => !used.has(x.id));
   b.active[b.active.indexOf(id)] = refill ? refill.id : null;
   return { id, name: q.name, xp: q.xp, wc: q.wc, leveledUp: r.leveledUp, newLevel: r.newLevel };
@@ -934,6 +947,228 @@ function checkQuests(state) {
     }
   });
   return fresh;
+}
+
+/* ---------------- Rewind today (test rewind — NOT a scoring change) ----------------
+   Rewind today undoes one day's worth of state so it can be redone (used to
+   re-test celebrations). It is deliberately NOT part of normal scoring:
+   normal deletes never claw War Coins back, but this rewind explicitly
+   reverses today's coin credits too, and says so in its preview.
+   computeRewindPreview(state, todayKey) is pure: it reads state and returns
+   exactly what a rewind would undo, plus before/after totals. It never
+   mutates state. applyRewindToday(state, todayKey, { prestige }) validates
+   through the preview first and refuses (returning ok:false, no mutation)
+   when any required input is missing — it never guesses a morning state.
+   Target rule: a lift that qualified for a target step (goal checkbox, or
+   every set at the rep max) and was not already at the top of its
+   progression stepped the target once; the rewind steps it back once with
+   prevLoad. This assumes each of today's lifts was saved once: a lift
+   re-saved today can step its target twice, and the preview warns about
+   that case rather than pretending otherwise.
+   Quest scope is the whole current week: quest claims carry no date before
+   v17, so the preview lists every claimed quest by name and warns the list
+   may include Mon–Thu claims. The preview's explicit Confirm is the gate.
+   Prestige has no date before v17 either, so prestige reversal is an
+   explicit toggle (default OFF, never assumed): morning XP = 200 − today's
+   total XP credits + current XP, because pre-prestige gains + morning XP
+   make the 200 cap and post-prestige gains equal current XP. That math is
+   exact only when no XP was discarded at the 200 cap today; a negative or
+   over-cap result blocks the prestige reversal.
+   EXCLUDED (stated in the preview): shop purchases, crate opens, scraps,
+   equipped gear, owned items — none carry dates, so today's shop activity
+   cannot be attributed. 2× charge claims and bonus activations are likewise
+   undated and stay as they are, except that a bonus consumed by one of
+   today's sessions is restored to active. */
+function prevLoad(ex, weight) {
+  if (ex.load === "cable") {
+    let prev = weight;
+    CABLE_STACK.forEach((s) => { if (s < weight) prev = s; });
+    return prev;
+  }
+  const p = weight - 5;
+  return p >= 5 ? p : weight;
+}
+function computeRewindPreview(state, todayKey) {
+  const today = todayKey || dateKey(new Date());
+  const blockers = [];
+  const sessions = [], targetRestores = [], achClaims = [], questClaims = [];
+  let food = null, weighins = null;
+  let xpRemoved = 0, coinsRemoved = 0, rolls = 0, doubledSession = false;
+  const todaySessions = (state.sessions || []).filter((s) => s.date === today);
+  if (todaySessions.length > 1) {
+    // Sessions are keyed by date (findSession merges), so a second session
+    // dated today means imported/merged oddity — refuse rather than guess.
+    blockers.push("Two sessions are dated today — cannot reverse them safely.");
+  }
+  todaySessions.forEach((s) => {
+    const lifts = [];
+    Object.entries(s.lifts || {}).forEach(([exId, l]) => {
+      const ex = EX_BY_ID[exId];
+      if (!ex) { blockers.push("Today's session has an unknown exercise (" + exId + ") — cannot reverse it safely."); return; }
+      if (!l || typeof l.xp !== "number") { blockers.push("Today's " + ex.name + " lift has no stored XP — cannot reverse it safely."); return; }
+      if (!state.targets || !state.targets[exId]) { blockers.push("No target on file for " + ex.name + " — cannot step its target back safely."); return; }
+      xpRemoved += l.xp;
+      let coins = (l.reps ? l.reps.length : 0) * WC_PER_SET + Math.floor(totalReps(l.reps || []) / 5) * WC_PER_5_REPS;
+      if (l.label === "Move-up") coins += WC_MOVEUP;
+      const trigger = l.goalHit === true || (l.reps && l.reps.length > 0 && l.reps.every((r) => r >= state.targets[exId].repMax));
+      let rolled = false, restored = null;
+      if (trigger) {
+        const cur = state.targets[exId].weight;
+        if (nextLoad(ex, cur) !== cur) {
+          rolled = true; restored = prevLoad(ex, cur); coins += WC_ROLLUP; rolls += 1;
+          targetRestores.push({ exId, name: ex.name, from: cur, to: restored });
+        }
+      }
+      coinsRemoved += coins;
+      lifts.push({ exId, name: ex.name, weight: l.weight, reps: l.reps || [], goalHit: !!l.goalHit, label: l.label, xp: l.xp, coins, rolled });
+    });
+    if (s.doubled === true) doubledSession = true;
+    sessions.push({ dayId: s.dayId, lifts });
+    coinsRemoved += WC_SESSION;
+  });
+  const foodDay = (state.foodDays || {})[today];
+  if (foodDay) {
+    const proteinBonus = !!(foodDay.bonus && foodDay.bonus.protein);
+    const calBonus = !!(foodDay.bonus && foodDay.bonus.cal);
+    const xp = (proteinBonus ? 1 : 0) + (calBonus ? 1 : 0);
+    const coins = (proteinBonus ? wcBoosted(WC_PROTEIN_DAY, today) : 0) + (calBonus ? wcBoosted(WC_CAL_DAY, today) : 0);
+    xpRemoved += xp; coinsRemoved += coins;
+    food = { entries: (foodDay.entries || []).length, proteinBonus, calBonus, xp, coins };
+  }
+  const todayWeights = (state.weights || []).filter((w) => w.date === today);
+  if (todayWeights.length) {
+    let gainClawed = false, gainXp = 0, gainCoins = 0;
+    const wk = weekKeyOf(today);
+    if ((state.weightXpWeeks || []).includes(wk)) {
+      // Attribute the week gain: it was paid by today's save unless an
+      // earlier REAL save in this week already held the gain condition.
+      // Synced/seed weights never ran addWeightToState, so they are skipped
+      // as evaluation points (but still count in the averages) — otherwise
+      // a synced week whose average already beat last week would wrongly
+      // look "paid earlier" when today actually paid it.
+      const injected = new Set(["2026-09-22", "2026-10-15"].concat(SYNC_WEIGHTS.map((w) => w.date)));
+      const pre = (state.weights || []).filter((w) => w.date !== today);
+      const weeks = {};
+      pre.forEach((w) => { (weeks[weekKeyOf(w.date)] = weeks[weekKeyOf(w.date)] || []).push(w.weight); });
+      const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+      const earlier = Object.keys(weeks).filter((k) => k < wk).sort();
+      const prevAvg = earlier.length ? avg(weeks[earlier[earlier.length - 1]]) : null;
+      let paidEarlier = false;
+      if (prevAvg !== null) {
+        const weekPre = pre.filter((w) => weekKeyOf(w.date) === wk).sort((a, b) => a.date.localeCompare(b.date));
+        const seen = [];
+        weekPre.forEach((w) => {
+          seen.push(w.weight);
+          if (!injected.has(w.date) && avg(seen) > prevAvg) paidEarlier = true;
+        });
+      }
+      if (!paidEarlier) {
+        gainClawed = true; gainXp = 2; gainCoins = wcBoosted(WC_WEEKLY_GAIN, today);
+      }
+    }
+    const weighCoins = todayWeights.length * wcBoosted(WC_WEIGHIN, today);
+    xpRemoved += gainXp; coinsRemoved += weighCoins + gainCoins;
+    weighins = { count: todayWeights.length, weights: todayWeights.map((w) => w.weight), gainClawed, gainXp, gainCoins, weighCoins };
+  }
+  Object.entries(state.achievementsClaimed || {}).forEach(([id, r]) => {
+    if (!r || r.date !== today) return;
+    if (typeof r.xp !== "number" || typeof r.wc !== "number") {
+      blockers.push("Today's " + (ACH_BY_ID[id] ? ACH_BY_ID[id].name : id) + " claim has no stored reward — cannot reverse it safely.");
+      return;
+    }
+    xpRemoved += r.xp; coinsRemoved += r.wc;
+    achClaims.push({ id, name: ACH_BY_ID[id] ? ACH_BY_ID[id].name : id, xp: r.xp, wc: r.wc });
+  });
+  const qb = state.questBoard && Array.isArray(state.questBoard.active) ? state.questBoard : null;
+  if (qb && qb.week === weekKeyOf(today)) {
+    questClaimEntries(qb).forEach((e) => {
+      const q = QUEST_BY_ID[e.id];
+      if (!q) return;
+      xpRemoved += q.xp; coinsRemoved += q.wc;
+      questClaims.push({ id: e.id, name: q.name, xp: q.xp, wc: q.wc, date: e.date });
+    });
+  }
+  const hasItems = sessions.length > 0 || !!food || !!weighins || achClaims.length > 0 || questClaims.length > 0;
+  const xpAfter = Math.max(0, (state.xpTotal || 0) - xpRemoved);
+  const coinsAfter = Math.max(0, (state.coins || 0) - coinsRemoved);
+  const coinsFloored = (state.coins || 0) - coinsRemoved < 0;
+  const claimableNow = state.doubleXp ? state.doubleXp.claimable : 0;
+  const claimableAfter = Math.max(0, claimableNow - rolls);
+  const claimableShortfall = rolls > claimableNow;
+  let morningXp = null, prestigeBlocked = null;
+  if ((state.prestige || 0) > 0) {
+    morningXp = XP_CAP - xpRemoved + (state.xpTotal || 0);
+    if (morningXp < 0 || morningXp > XP_CAP) {
+      prestigeBlocked = "Prestige reversal math doesn't check out (computed morning XP " + morningXp + ") — likely some of today's XP was discarded at the 200 cap. Rewind without prestige instead.";
+    }
+  }
+  const before = { xp: state.xpTotal || 0, coins: state.coins || 0, prestige: state.prestige || 0, level: levelForXp(state.xpTotal || 0) };
+  const afterOff = { xp: xpAfter, coins: coinsAfter, prestige: state.prestige || 0, level: levelForXp(xpAfter) };
+  const afterOn = morningXp !== null && !prestigeBlocked
+    ? { xp: morningXp, coins: coinsAfter, prestige: (state.prestige || 0) - 1, level: levelForXp(morningXp) } : null;
+  return { today, blockers, items: { sessions, food, weighins, achClaims, questClaims, targetRestores, rolls, doubledSession },
+    xpRemoved, coinsRemoved, xpAfter, coinsAfter, coinsFloored, claimableAfter, claimableShortfall,
+    morningXp, prestigeBlocked, hasItems, before, afterOff, afterOn,
+    nothingToRewind: !hasItems && !(state.prestige > 0) };
+}
+function applyRewindToday(state, todayKey, opts) {
+  const preview = computeRewindPreview(state, todayKey);
+  const today = preview.today;
+  const wantPrestige = !!(opts && opts.prestige);
+  if (preview.blockers.length) return { ok: false, blockers: preview.blockers, preview };
+  if (wantPrestige && preview.prestigeBlocked) return { ok: false, blockers: [preview.prestigeBlocked], preview };
+  if (wantPrestige && !(state.prestige > 0)) return { ok: false, blockers: ["No prestige to reverse."], preview };
+  if (!preview.hasItems && !wantPrestige) return { ok: false, nothing: true, preview };
+  state.sessions = (state.sessions || []).filter((s) => s.date !== today);
+  if (state.foodDays && state.foodDays[today]) delete state.foodDays[today];
+  state.weights = (state.weights || []).filter((w) => w.date !== today);
+  if (preview.items.weighins && preview.items.weighins.gainClawed) {
+    state.weightXpWeeks = (state.weightXpWeeks || []).filter((k) => k !== weekKeyOf(today));
+  }
+  preview.items.achClaims.forEach((c) => { if (state.achievementsClaimed) delete state.achievementsClaimed[c.id]; });
+  if (state.questBoard && Array.isArray(state.questBoard.active)) {
+    const rot = typeof state.questBoard.rotation === "number" ? state.questBoard.rotation : 0;
+    const initial = [];
+    for (let i = 0; i < QUEST_BOARD_SIZE; i++) initial.push(QUESTS[(rot + i) % QUESTS.length].id);
+    state.questBoard.claimed = [];
+    state.questBoard.active = initial;
+  }
+  preview.items.targetRestores.forEach((t) => { if (state.targets && state.targets[t.exId]) state.targets[t.exId].weight = t.to; });
+  if (preview.items.doubledSession && state.doubleXp && !state.doubleXp.active) state.doubleXp.active = true;
+  if (state.doubleXp) state.doubleXp.claimable = preview.claimableAfter;
+  if (Array.isArray(state.achievements)) state.achievements = state.achievements.filter((id) => achievementEarned(state, id));
+  // Restore unclaimed achievements to the board. A plain ensure call cannot
+  // do this when the board is full: the refill that replaced the claimed
+  // entry still occupies its slot. So per restored id, evict the last
+  // non-restored entry (in the normal claim-then-rewind flow those trailing
+  // entries are exactly the refills, most recent first) and append the
+  // unclaimed id. Composition returns to pre-claim; order may differ, and
+  // an evicted entry that is still earned is promoted again by the normal
+  // refill rule the next time a slot frees.
+  if (Array.isArray(state.achievementBoard)) {
+    const restoreIds = preview.items.achClaims.map((c) => c.id).filter((id) => !state.achievementBoard.includes(id));
+    restoreIds.forEach((id) => {
+      if (state.achievementBoard.length >= ACH_BOARD_SIZE) {
+        for (let i = state.achievementBoard.length - 1; i >= 0; i--) {
+          if (!restoreIds.includes(state.achievementBoard[i])) { state.achievementBoard.splice(i, 1); break; }
+        }
+      }
+      if (!state.achievementBoard.includes(id)) state.achievementBoard.push(id);
+    });
+  }
+  if (wantPrestige) {
+    state.prestige = (state.prestige || 0) - 1;
+    state.xpTotal = preview.morningXp;
+    if (Array.isArray(state.prestigeDates)) {
+      const idx = state.prestigeDates.lastIndexOf(today);
+      if (idx >= 0) state.prestigeDates.splice(idx, 1);
+    }
+  } else {
+    state.xpTotal = preview.xpAfter;
+  }
+  state.coins = preview.coinsAfter;
+  ensureAchievementBoard(state);
+  return { ok: true, preview, after: wantPrestige ? preview.afterOn : preview.afterOff };
 }
 
 /* ---------------- Stage 2: shop catalog, War Coins, crates, character ---------------- */
@@ -1070,6 +1305,12 @@ function migrateState(state) {
   if (!state.achievementsClaimed || typeof state.achievementsClaimed !== "object") state.achievementsClaimed = {};
   if (!Array.isArray(state.achievementBoard)) state.achievementBoard = [];
   if (!state.questBoard || typeof state.questBoard !== "object" || !Array.isArray(state.questBoard.active)) state.questBoard = { week: null, active: [], claimed: [], rotation: 0 };
+  if (Array.isArray(state.questBoard.claimed)) {
+    // v17: quest claims carry their claim date. Bare ids from older states
+    // become { id, date: null } — claimed this week, exact day unknown.
+    state.questBoard.claimed = state.questBoard.claimed.map((c) => (typeof c === "string" ? { id: c, date: null } : c));
+  }
+  if (!Array.isArray(state.prestigeDates)) state.prestigeDates = [];
   if (!Array.isArray(state.questEvents)) state.questEvents = [];
   if (!state.questNotified || typeof state.questNotified !== "object") state.questNotified = {};
   if (!state.collapsed || typeof state.collapsed !== "object") state.collapsed = {};
@@ -1584,7 +1825,8 @@ if (typeof module !== "undefined" && module.exports) {
     ACHIEVEMENTS, QUESTS, ACH_BY_ID, QUEST_BY_ID, ACH_BOARD_SIZE,
     QUEST_BOARD_SIZE, achievementEarned, awardAchievements, ensureAchievementBoard,
     claimableAchievements, claimAchievement, claimAllAchievements, questProgress,
-    ensureQuestBoard, claimableQuests, claimQuest, claimAllQuests, checkQuests };
+    ensureQuestBoard, claimableQuests, claimQuest, claimAllQuests, checkQuests,
+    questClaimedIds, questClaimEntries, prevLoad, computeRewindPreview, applyRewindToday };
 }
 
 /* ---------------- Browser layer (DOM, storage, sounds, events) ---------------- */
@@ -1797,9 +2039,17 @@ if (typeof document !== "undefined") {
     $("weekBadge").textContent = "Week " + weekFor(new Date());
     $("coinsChip").textContent = "🪙 " + state.coins.toLocaleString();
     $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
-    $("rankMini").innerHTML = rankInsigniaSvg(level, 28);
-    const pfx = state.prestige > 0 ? "P" + state.prestige + " · " : "";
-    $("rankName").textContent = pfx + "Lv " + level + " · " + rankForLevel(level) + (state.xpTotal >= XP_CAP ? " · PRESTIGE READY" : "");
+    if (state.prestige > 0) {
+      // Prestiged: the header badge is the current prestige emblem (not the
+      // basic rank insignia) with the level number beside it. Prestige 0
+      // keeps the rank insignia + rank name exactly as before.
+      const pn = Math.min(10, state.prestige);
+      $("rankMini").innerHTML = `<img class="rank-mini-prestige" src="./assets/prestige/prestige-${pn}.jpg" alt="Prestige ${pn} emblem">`;
+      $("rankName").textContent = "Lv " + level + (state.xpTotal >= XP_CAP ? " · PRESTIGE READY" : "");
+    } else {
+      $("rankMini").innerHTML = rankInsigniaSvg(level, 28);
+      $("rankName").textContent = "Lv " + level + " · " + rankForLevel(level) + (state.xpTotal >= XP_CAP ? " · PRESTIGE READY" : "");
+    }
     const into = state.xpTotal - (level - 1) * XP_PER_LEVEL;
     $("headXpMeter").style.width = Math.min(100, into / XP_PER_LEVEL * 100) + "%";
     $("headXpText").textContent = state.xpTotal + " / " + XP_CAP + " XP";
@@ -2115,13 +2365,13 @@ if (typeof document !== "undefined") {
       const got = achievementEarned(state, id);
       return `<div class="ach-item ${got ? "earned" : "locked"}"><b>${esc(a.name)}</b><span>${esc(a.desc)}</span><span class="reward">+${a.xp} XP · +${a.wc} WC</span>${got ? `<button class="small claim-btn" data-claim-ach="${a.id}">CLAIM</button>` : `<span class="badge closed">LOCKED</span>`}</div>`;
     }).join("") + `</div>` + (state.achievementBoard.length < ACH_BOARD_SIZE ? `<p class="muted">More achievements coming — the board refills as new ones are added.</p>` : "") + (claimableA.length ? `<p><button class="small claim-btn" data-claim-all-ach>Claim all (${claimableA.length})</button></p>` : "") + (Object.keys(claimedA).length ? `<p class="muted">Claimed:</p><div class="claimed-list">` + Object.entries(claimedA).map(([id, r]) => `<span>${esc(ACH_BY_ID[id] ? ACH_BY_ID[id].name : id)} · +${r.xp} XP · +${r.wc} WC · ${fmtDate(r.date)}</span>`).join("") + `</div>` : "");
-    const claimableQ = qb.active.filter((id) => id && questProgress(state, QUEST_BY_ID[id], qb.week).done && !qb.claimed.includes(id));
+    const claimableQ = qb.active.filter((id) => id && questProgress(state, QUEST_BY_ID[id], qb.week).done && !questClaimedIds(qb).includes(id));
     $("questsBox").innerHTML = qb.active.map((id) => {
       if (!id) return `<div class="quest-row"><div><b>More quests coming</b> <span class="muted">· New quests arrive with the next Monday rotation.</span></div></div>`;
       const q = QUEST_BY_ID[id];
       const pr = questProgress(state, q, qb.week);
       return `<div class="quest-row"><div><b>${esc(q.name)}</b> <span class="muted">· ${esc(q.desc)}</span></div><div class="meter"><div style="width:${pr.target ? Math.round(pr.current / pr.target * 100) : 0}%"></div></div><span>${pr.current}/${pr.target} · +${q.xp} XP · +${q.wc} WC ${pr.done ? `<button class="small claim-btn" data-claim-quest="${q.id}">CLAIM</button>` : ""}</span></div>`;
-    }).join("") + (claimableQ.length ? `<p><button class="small claim-btn" data-claim-all-quest>Claim all (${claimableQ.length})</button></p>` : "") + (qb.claimed.length ? `<p class="muted">Claimed this week: ` + qb.claimed.map((id) => esc(QUEST_BY_ID[id] ? QUEST_BY_ID[id].name : id)).join(", ") + `</p>` : "") + `<p class="muted">Quests refresh every Monday. Completed quests pay XP + War Coins when claimed.</p>`;
+    }).join("") + (claimableQ.length ? `<p><button class="small claim-btn" data-claim-all-quest>Claim all (${claimableQ.length})</button></p>` : "") + (qb.claimed.length ? `<p class="muted">Claimed this week: ` + questClaimedIds(qb).map((id) => esc(QUEST_BY_ID[id] ? QUEST_BY_ID[id].name : id)).join(", ") + `</p>` : "") + `<p class="muted">Quests refresh every Monday. Completed quests pay XP + War Coins when claimed.</p>`;
     /* Claim celebrations: the claim sting + spark burst are the claim moment;
        when the claim crosses a level boundary, the full-screen promotion
        fires instead of the sting (same shared before/after check as every
@@ -2240,6 +2490,147 @@ if (typeof document !== "undefined") {
     reader.readAsText(file);
     ev.target.value = "";
   });
+
+  /* ----- Rewind today: preview first, confirm to apply, never a sound or
+     celebration. The preview opens only after a safety backup download, so
+     importing that backup undoes the rewind. State never changes on
+     preview, and a second tap reports nothing left to rewind. ----- */
+  function downloadStateBackup(prefix) {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    const name = prefix + dateKey(new Date()) + ".json";
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return name;
+  }
+  const rewindHost = document.querySelector("#card-backup .card-body");
+  if (rewindHost) {
+    const intro = document.createElement("p");
+    intro.innerHTML = `<button id="rewindBtn" class="secondary">Rewind today</button> <span class="muted">Undo today's logging and claims, back to this morning.</span>`;
+    rewindHost.appendChild(intro);
+    const rewindPanel = document.createElement("div");
+    rewindPanel.id = "rewindPanel";
+    rewindHost.appendChild(rewindPanel);
+    const rewindMsg = document.createElement("p");
+    rewindMsg.id = "rewindMsg"; rewindMsg.className = "muted";
+    rewindHost.appendChild(rewindMsg);
+    let rewindBackupName = null, rewindTodayKey = null;
+    function rewindTotals(t) { return t.xp + " XP · " + t.coins.toLocaleString() + " WC · Prestige " + t.prestige + " · Level " + t.level; }
+    function bindRewindClose() {
+      const c = document.getElementById("rewindCancel");
+      if (c) c.addEventListener("click", () => { rewindPanel.innerHTML = ""; });
+    }
+    function renderRewindPreview() {
+      const prevToggle = document.getElementById("rewindPrestigeToggle");
+      const toggleOn = !!(prevToggle && prevToggle.checked);
+      ensureAchievementBoard(state);
+      ensureQuestBoard(state);
+      const pv = computeRewindPreview(state, rewindTodayKey);
+      const it = pv.items;
+      let html = `<div class="rewind-panel">`;
+      if (pv.blockers.length) {
+        html += `<p class="rewind-block">Rewind can't run safely — nothing was changed:</p><ul>` +
+          pv.blockers.map((b) => `<li>${esc(b)}</li>`).join("") + `</ul>` +
+          `<p class="muted">Safety backup downloaded: ${esc(rewindBackupName)} — import it if you need to get back here.</p>` +
+          `<p><button class="secondary" id="rewindCancel">Close</button></p>`;
+      } else if (!pv.hasItems && !toggleOn) {
+        html += `<p>Nothing from today to rewind — no sessions, food, weigh-ins, or claims found for today.</p>`;
+        if (state.prestige > 0) {
+          html += `<p><label><input type="checkbox" id="rewindPrestigeToggle"> I prestiged today — reverse it (Prestige ${state.prestige} → ${state.prestige - 1})</label></p>`;
+        }
+        html += `<p><button class="secondary" id="rewindCancel">Close</button></p>`;
+      } else {
+        html += `<p><b>Rewind today — this will undo the following. Nothing changes until you tap Confirm.</b></p>`;
+        if (!pv.hasItems) html += `<p>No sessions, food, weigh-ins, or claims from today — only the prestige reversal below.</p>`;
+        it.sessions.forEach((s) => {
+          const day = DAYS.find((d) => d.id === s.dayId);
+          html += `<p><b>Session: ${esc(day ? day.name : s.dayId)}</b> <span class="muted">(+25 WC session bonus)</span></p><ul>` +
+            s.lifts.map((l) => `<li>${esc(l.name)}: ${esc(fmtWeight(EX_BY_ID[l.exId], l.weight))} × ${l.reps.join("/")} — +${l.xp} XP · +${l.coins} WC${l.rolled ? " · target steps back" : ""}</li>`).join("") + `</ul>`;
+        });
+        if (it.food) {
+          html += `<p><b>Food today:</b> ${it.food.entries} entries` +
+            (it.food.proteinBonus || it.food.calBonus ? ` — bonuses reversed: ${it.food.proteinBonus ? "protein −1 XP · −" + wcBoosted(WC_PROTEIN_DAY, pv.today) + " WC" : ""}${it.food.proteinBonus && it.food.calBonus ? "; " : ""}${it.food.calBonus ? "calories −1 XP · −" + wcBoosted(WC_CAL_DAY, pv.today) + " WC" : ""}` : ` (no bonus XP/WC to claw back)`) + `</p>`;
+        }
+        if (it.weighins) {
+          html += `<p><b>Weigh-ins today:</b> ${it.weighins.weights.join(", ")} lbs — −${it.weighins.weighCoins} WC` +
+            (it.weighins.gainClawed ? `; weekly-average gain reversed: −2 XP · −${it.weighins.gainCoins} WC, week removed from paid weeks` : "") + `</p>`;
+        }
+        if (it.achClaims.length) {
+          html += `<p><b>Achievement claims today:</b></p><ul>` +
+            it.achClaims.map((c) => `<li>${esc(c.name)} — −${c.xp} XP · −${c.wc} WC (claim undone, back on the board)</li>`).join("") + `</ul>`;
+        }
+        if (it.questClaims.length) {
+          html += `<p><b>Quest claims this week (unclaimed as a group):</b></p><ul>` +
+            it.questClaims.map((c) => `<li>${esc(c.name)} — −${c.xp} XP · −${c.wc} WC` +
+              (c.date === pv.today ? ` (today)` : (c.date ? ` (claimed ${fmtDate(c.date)})` : ` (date unknown — claimed this week)`)) + `</li>`).join("") + `</ul>` +
+            `<p class="rewind-warn">Quest claims from before v17 carry no date, and this list covers the whole week — it may include quests you claimed Mon–Thu, not just today. Confirming unclaims all of them and restores the week's starting board.</p>`;
+        }
+        if (it.targetRestores.length) {
+          html += `<p><b>Targets step back:</b></p><ul>` +
+            it.targetRestores.map((t) => `<li>${esc(t.name)}: ${t.from} → ${t.to}</li>`).join("") + `</ul>` +
+            `<p class="muted">If you re-saved a lift today, its target may sit one step high — check the Log tab after rewinding.</p>`;
+        }
+        if (it.doubledSession) {
+          html += `<p><b>2× bonus:</b> today's first session used the active bonus — it will be active again${state.doubleXp && state.doubleXp.active ? " (already active again — no change)" : ""}.</p>`;
+        }
+        if (it.rolls > 0) {
+          html += `<p><b>2× charges banked by today's target hits:</b> ${it.rolls} — claimable drops to ${pv.claimableAfter}.` +
+            (pv.claimableShortfall ? ` <span class="rewind-warn">Some of those banked charges were already claimed today, so the stacked total stays as it is.</span>` : "") + `</p>`;
+        }
+        if (pv.hasItems) html += `<p class="muted">Not rewound: 2× charge claims and bonus activations aren't dated, so stacked charges stay as they are.</p>`;
+        html += `<p><b>Before:</b> ${rewindTotals(pv.before)}</p>`;
+        if (state.prestige > 0) {
+          html += `<p><label><input type="checkbox" id="rewindPrestigeToggle"${toggleOn ? " checked" : ""}> I prestiged today — reverse it (Prestige ${state.prestige} → ${state.prestige - 1})</label></p>`;
+          if (toggleOn && pv.prestigeBlocked) {
+            html += `<p class="rewind-block">${esc(pv.prestigeBlocked)}</p>`;
+          } else if (toggleOn && pv.afterOn) {
+            html += `<p><b>After (with prestige reversal):</b> ${rewindTotals(pv.afterOn)}</p><p class="muted">Morning XP is exact unless some of today's XP was discarded at the 200 cap.</p>`;
+          } else {
+            html += `<p><b>After:</b> ${rewindTotals(pv.afterOff)}</p>`;
+          }
+        } else {
+          html += `<p><b>After:</b> ${rewindTotals(pv.afterOff)}</p>`;
+        }
+        if (pv.coinsFloored) html += `<p class="rewind-warn">Coin total would go below 0 (shop spending today isn't rewound), so it stops at 0.</p>`;
+        html += `<p class="muted">NOT rewound: shop purchases, crate opens, scraps, equipped gear, and owned items. Coins spent in the shop today stay spent.</p>`;
+        html += `<p class="muted">Safety backup downloaded: ${esc(rewindBackupName)} — import it to undo this rewind.</p>`;
+        const canConfirm = !(toggleOn && pv.prestigeBlocked);
+        html += `<p>${canConfirm ? `<button id="rewindConfirm">Yes, rewind today</button> ` : ``}<button class="secondary" id="rewindCancel">Cancel</button></p>`;
+      }
+      html += `</div>`;
+      rewindPanel.innerHTML = html;
+      const tgl = document.getElementById("rewindPrestigeToggle");
+      if (tgl) tgl.addEventListener("change", renderRewindPreview);
+      bindRewindClose();
+      const confirm = document.getElementById("rewindConfirm");
+      if (confirm) confirm.addEventListener("click", () => {
+        if (dateKey(new Date()) !== rewindTodayKey) {
+          rewindPanel.innerHTML = `<div class="rewind-panel"><p class="rewind-block">It's past midnight — reopen the preview so it targets the right day.</p><p><button class="secondary" id="rewindCancel">Close</button></p></div>`;
+          bindRewindClose();
+          return;
+        }
+        const t = document.getElementById("rewindPrestigeToggle");
+        const res = applyRewindToday(state, rewindTodayKey, { prestige: !!(t && t.checked) });
+        if (!res.ok) {
+          rewindPanel.innerHTML = `<div class="rewind-panel"><p class="rewind-block">Rewind did not run: ${esc((res.blockers && res.blockers[0]) || "nothing to rewind.")}</p><p><button class="secondary" id="rewindCancel">Close</button></p></div>`;
+          bindRewindClose();
+          return;
+        }
+        persist();
+        renderHeader(); renderProgress(); renderDays(); renderLog(); renderFood();
+        rewindPanel.innerHTML = `<div class="rewind-panel"><p><b>Rewound to this morning.</b></p><p>Now: ${rewindTotals(res.after)}.</p><p class="muted">Safety backup: ${esc(rewindBackupName)} — import it to undo.</p><p><button class="secondary" id="rewindCancel">Close</button></p></div>`;
+        bindRewindClose();
+        rewindMsg.textContent = "Rewound today. Now: " + rewindTotals(res.after) + ".";
+      });
+    }
+    $("rewindBtn").addEventListener("click", () => {
+      rewindTodayKey = dateKey(new Date());
+      rewindBackupName = downloadStateBackup("form-guide-backup-before-rewind-");
+      renderRewindPreview();
+    });
+  }
 
   /* ----- Stage 2 sounds ----- */
   function tone(freq, dur, type, gain, delay) {
