@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Avatar Proof — Picture Form Guide</title>
+<style>
+  html,body{margin:0;height:100%;background:#141416;color:#eee;font-family:-apple-system,system-ui,sans-serif;overflow:hidden}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #panel{position:fixed;left:12px;top:12px;background:rgba(10,10,12,.82);border:1px solid #333;border-radius:12px;padding:12px 14px;max-width:290px;z-index:2}
+  #panel h2{margin:0 0 8px;font-size:16px}
+  #panel label{display:block;margin:8px 0 2px;font-size:13px;color:#ccc}
+  #panel select,#panel input[type=range]{width:100%}
+  #panel .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  #panel .row label{display:flex;align-items:center;gap:5px;margin:0;font-size:13px}
+  #note{position:fixed;left:12px;bottom:12px;right:12px;background:rgba(10,10,12,.75);border:1px solid #333;border-radius:10px;padding:8px 12px;font-size:12px;color:#bbb;z-index:2}
+  #note b{color:#fff}
+  #stats{position:fixed;right:12px;top:12px;background:rgba(10,10,12,.75);border:1px solid #333;border-radius:10px;padding:6px 10px;font-size:12px;color:#bbb;z-index:2}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h2>3D Avatar Proof</h2>
+  <label>Top</label>
+  <select id="topSel">
+    <option value="base">Base military tee</option>
+    <option value="faith">Faith tee</option>
+    <option value="saint">Saint jacket</option>
+  </select>
+  <label>Bottom</label>
+  <select id="botSel">
+    <option value="shorts">Base fatigue shorts</option>
+    <option value="cargos">Black Cargos</option>
+    <option value="joggers">Charcoal Joggers</option>
+  </select>
+  <div class="row">
+    <label><input type="checkbox" id="pouchChk"> Field pouch</label>
+    <label><input type="checkbox" id="shakerChk"> Shaker</label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="stacheChk"> Moustache</label>
+    <label><input type="checkbox" id="nightChk"> Night mode</label>
+  </div>
+  <label>Mass <span id="massVal">100%</span></label>
+  <input type="range" id="massSlider" min="90" max="115" value="100">
+</div>
+<div id="stats"></div>
+<div id="note"><b>Proof, not the app.</b> One rigged figure: garments are meshes on the same joints, so swapping one item moves nothing else. Drag to orbit. URL params work too: ?top=faith&amp;bottom=cargos&amp;pouch=1&amp;shaker=1&amp;stache=1&amp;mass=105&amp;night=1</div>
+<script type="module">
+import * as THREE from 'three';
+// __SCENE_START__
+// 3D avatar proof: procedural rigged figure. Every garment is a mesh parented
+// to the SAME joints as the body, so fit is decided by the rig, never by
+// compositing separate renders. No external model files are used.
+function makeCanvas(w, h, draw) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  draw(ctx, w, h);
+  return cv;
+}
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const MAT = {
+  skin: new THREE.MeshStandardMaterial({ color: 0xd29a72, roughness: 0.62 }),
+  skinDark: new THREE.MeshStandardMaterial({ color: 0xb9835c, roughness: 0.65 }),
+  lip: new THREE.MeshStandardMaterial({ color: 0x7a4a3d, roughness: 0.6 }),
+  hair: new THREE.MeshStandardMaterial({ color: 0x241c15, roughness: 0.95 }),
+  eyeWhite: new THREE.MeshStandardMaterial({ color: 0xf4f0ea, roughness: 0.35 }),
+  iris: new THREE.MeshStandardMaterial({ color: 0x2a1d12, roughness: 0.3 }),
+  boot: new THREE.MeshStandardMaterial({ color: 0xa98a5f, roughness: 0.85 }),
+  bootDark: new THREE.MeshStandardMaterial({ color: 0x8a6f4a, roughness: 0.85 }),
+  baseTee: new THREE.MeshStandardMaterial({ color: 0x6b6b45, roughness: 0.9 }),
+  faithTee: new THREE.MeshStandardMaterial({ color: 0x17171a, roughness: 0.9 }),
+  saint: new THREE.MeshStandardMaterial({ color: 0x33512c, roughness: 0.88 }),
+  gold: new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.45, metalness: 0.35 }),
+  blackPants: new THREE.MeshStandardMaterial({ color: 0x232326, roughness: 0.92 }),
+  charcoal: new THREE.MeshStandardMaterial({ color: 0x2e2e33, roughness: 0.92 }),
+  pouch: new THREE.MeshStandardMaterial({ color: 0x5a5a33, roughness: 0.95 }),
+  pouchDark: new THREE.MeshStandardMaterial({ color: 0x48482a, roughness: 0.95 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0xc8ccd2, roughness: 0.25, metalness: 0.9 }),
+  lidBlack: new THREE.MeshStandardMaterial({ color: 0x111114, roughness: 0.5 }),
+  ground: new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: 1 }),
+};
+function camoTexture() {
+  const cv = makeCanvas(256, 256, (ctx, w, h) => {
+    const rnd = mulberry32(7);
+    ctx.fillStyle = '#6b6b45'; ctx.fillRect(0, 0, w, h);
+    const cols = ['#4a4a30', '#8a8a5a', '#3a3a26', '#7a7a48'];
+    for (let i = 0; i < 90; i++) {
+      ctx.fillStyle = cols[Math.floor(rnd() * cols.length)];
+      ctx.beginPath();
+      const x = rnd() * w, y = rnd() * h, r = 8 + rnd() * 26;
+      ctx.ellipse(x, y, r, r * (0.4 + rnd() * 0.6), rnd() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+const camoMat = new THREE.MeshStandardMaterial({ map: camoTexture(), roughness: 0.95 });
+function faithTexture() {
+  const cv = makeCanvas(512, 256, (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#f2f0ea';
+    ctx.font = '900 150px Georgia, "Times New Roman", serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, 1.05);
+    ctx.fillText('FAITH', 0, 0);
+    ctx.restore();
+  });
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = 4;
+  return tex;
+}
+function mesh(geo, mat, x, y, z, parent) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  if (parent) parent.add(m);
+  return m;
+}
+function limbMesh(parent, geo, mat, y) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.y = y;
+  parent.add(m);
+  return m;
+}
+function buildFigure() {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x141416);
+  const root = new THREE.Group();
+  scene.add(root);
+  const massMeshes = [];
+  function regMass(m) { m.userData.baseScale = m.scale.clone(); massMeshes.push(m); return m; }
+  // ---- joints ----
+  const hipsG = new THREE.Group(); hipsG.position.set(0, 0.98, 0); root.add(hipsG);
+  const spineG = new THREE.Group(); spineG.position.set(0, 0.14, 0); hipsG.add(spineG);
+  const chestG = new THREE.Group(); chestG.position.set(0, 0.18, 0); spineG.add(chestG);
+  const headG = new THREE.Group(); headG.position.set(0, 0.36, 0); chestG.add(headG);
+  const shoulderL = new THREE.Group(); shoulderL.position.set(0.25, 0.17, 0); shoulderL.rotation.z = 0.12; chestG.add(shoulderL);
+  const shoulderR = new THREE.Group(); shoulderR.position.set(-0.25, 0.17, 0); shoulderR.rotation.z = -0.12; chestG.add(shoulderR);
+  const elbowL = new THREE.Group(); elbowL.position.set(0.045, -0.31, 0); elbowL.rotation.x = -0.20; shoulderL.add(elbowL);
+  const elbowR = new THREE.Group(); elbowR.position.set(-0.045, -0.31, 0); elbowR.rotation.x = -0.20; shoulderR.add(elbowR);
+  const wristL = new THREE.Group(); wristL.position.set(0, -0.26, 0); elbowL.add(wristL);
+  const wristR = new THREE.Group(); wristR.position.set(0, -0.26, 0); elbowR.add(wristR);
+  const legL = new THREE.Group(); legL.position.set(0.125, 0, 0); hipsG.add(legL);
+  const legR = new THREE.Group(); legR.position.set(-0.125, 0, 0); hipsG.add(legR);
+  const kneeL = new THREE.Group(); kneeL.position.set(0.01, -0.46, 0); legL.add(kneeL);
+  const kneeR = new THREE.Group(); kneeR.position.set(-0.01, -0.46, 0); legR.add(kneeR);
+  const ankleL = new THREE.Group(); ankleL.position.set(0, -0.38, 0); kneeL.add(ankleL);
+  const ankleR = new THREE.Group(); ankleR.position.set(0, -0.38, 0); kneeR.add(ankleR);
+  // ---- body ----
+  const pelvis = regMass(mesh(new THREE.SphereGeometry(0.14, 28, 20), MAT.skin, 0, 0, 0, hipsG));
+  pelvis.scale.set(1.35, 0.75, 0.85); pelvis.userData.baseScale.copy(pelvis.scale);
+  const torsoPts = [
+    [0.001, -0.02], [0.135, -0.02], [0.15, 0.02], [0.145, 0.10], [0.15, 0.18],
+    [0.17, 0.28], [0.195, 0.36], [0.20, 0.42], [0.155, 0.48], [0.09, 0.50], [0.001, 0.50],
+  ].map(p => new THREE.Vector2(p[0], p[1]));
+  const torso = regMass(mesh(new THREE.LatheGeometry(torsoPts, 36), MAT.skin, 0, 0, 0, spineG));
+  torso.scale.set(1.22, 1, 0.76); torso.userData.baseScale.copy(torso.scale);
+  mesh(new THREE.CylinderGeometry(0.065, 0.068, 0.16, 20), MAT.skin, 0, 0.26, 0, chestG);
+  const head = mesh(new THREE.SphereGeometry(0.125, 32, 24), MAT.skin, 0, 0, 0, headG);
+  head.scale.set(0.92, 1.18, 0.98);
+  const jaw = mesh(new THREE.SphereGeometry(0.09, 24, 18), MAT.skin, 0, -0.08, 0.02, headG);
+  jaw.scale.set(0.95, 0.8, 0.9);
+  const hair = mesh(new THREE.SphereGeometry(0.128, 32, 24), MAT.hair, 0, 0.03, -0.03, headG);
+  hair.scale.set(0.92, 1.18, 0.98);
+  for (const s of [1, -1]) {
+    mesh(new THREE.SphereGeometry(0.028, 16, 12), MAT.skin, s * 0.118, -0.01, 0, headG).scale.set(0.5, 0.9, 0.7);
+    const ew = mesh(new THREE.SphereGeometry(0.014, 16, 12), MAT.eyeWhite, s * 0.048, 0.018, 0.112, headG);
+    ew.scale.set(1.0, 0.6, 0.35);
+    mesh(new THREE.SphereGeometry(0.008, 12, 10), MAT.iris, s * 0.048, 0.018, 0.124, headG);
+    const brow = mesh(new THREE.BoxGeometry(0.06, 0.010, 0.01), MAT.hair, s * 0.05, 0.050, 0.105, headG);
+    brow.rotation.z = -s * 0.08;
+  }
+  mesh(new THREE.SphereGeometry(0.013, 14, 10), MAT.skinDark, 0, -0.018, 0.120, headG).scale.set(0.7, 1.1, 0.7);
+  const mouth = mesh(new THREE.TorusGeometry(0.036, 0.006, 8, 20, Math.PI), MAT.lip, 0, -0.072, 0.115, headG);
+  mouth.rotation.z = Math.PI; mouth.rotation.x = -0.2;
+  const stache = new THREE.Group(); stache.position.set(0, -0.045, 0.125); headG.add(stache);
+  for (const s of [1, -1]) {
+    const half = mesh(new THREE.CapsuleGeometry(0.011, 0.028, 4, 10), MAT.hair, s * 0.022, 0, 0, stache);
+    half.rotation.z = Math.PI / 2 + s * 0.25;
+  }
+  stache.visible = false;
+  function armSide(shoulderG, elbowG, wristG, side) {
+    const up = regMass(mesh(new THREE.CapsuleGeometry(0.068, 0.174, 6, 18), MAT.skin, 0, -0.155, 0, shoulderG));
+    mesh(new THREE.SphereGeometry(0.055, 16, 12), MAT.skin, 0, 0, 0, elbowG);
+    const fo = regMass(mesh(new THREE.CapsuleGeometry(0.058, 0.144, 6, 18), MAT.skin, 0, -0.13, 0, elbowG));
+    const hand = mesh(new THREE.SphereGeometry(0.058, 18, 14), MAT.skin, 0, -0.06, 0, wristG);
+    hand.scale.set(0.85, 1.25, 0.6);
+    return { up, fo, hand };
+  }
+  const armL = armSide(shoulderL, elbowL, wristL, 1);
+  const armR = armSide(shoulderR, elbowR, wristR, -1);
+  function legSide(legG, kneeG, ankleG) {
+    const th = regMass(mesh(new THREE.CapsuleGeometry(0.10, 0.26, 6, 20), MAT.skin, 0, -0.23, 0, legG));
+    mesh(new THREE.SphereGeometry(0.065, 16, 12), MAT.skin, 0, 0, 0, kneeG);
+    const sh = regMass(mesh(new THREE.CapsuleGeometry(0.065, 0.25, 6, 18), MAT.skin, 0, -0.19, 0, kneeG));
+    mesh(new THREE.CylinderGeometry(0.065, 0.07, 0.18, 18), MAT.boot, 0, -0.05, 0, ankleG);
+    const foot = mesh(new THREE.SphereGeometry(0.07, 20, 14), MAT.boot, 0, -0.095, 0.045, ankleG);
+    foot.scale.set(1.05, 0.45, 1.9);
+    mesh(new THREE.BoxGeometry(0.13, 0.02, 0.24), MAT.bootDark, 0, -0.125, 0.045, ankleG);
+    return { th, sh };
+  }
+  const legLb = legSide(legL, kneeL, ankleL);
+  const legRb = legSide(legR, kneeR, ankleR);
+  // ---- garment shells ----
+  function shellLathe(scaleR, topOpen) {
+    const pts = torsoPts.map(p => new THREE.Vector2(p.x * scaleR + 0.004, p.y));
+    if (topOpen) pts.pop();
+    return new THREE.LatheGeometry(pts, 36);
+  }
+  const teeTorso = regMass(mesh(shellLathe(1.06, true), MAT.baseTee, 0, 0, 0, spineG));
+  teeTorso.scale.set(1.22, 1, 0.76); teeTorso.userData.baseScale.copy(teeTorso.scale);
+  const teeCollar = mesh(new THREE.TorusGeometry(0.095, 0.014, 10, 28), MAT.baseTee, 0, 0.50, 0, spineG);
+  teeCollar.rotation.x = Math.PI / 2; teeCollar.scale.set(1.22, 1, 0.76);
+  const faithTorso = regMass(mesh(shellLathe(1.06, true), MAT.faithTee, 0, 0, 0, spineG));
+  faithTorso.scale.set(1.22, 1, 0.76); faithTorso.userData.baseScale.copy(faithTorso.scale);
+  const faithCollar = mesh(new THREE.TorusGeometry(0.095, 0.014, 10, 28), MAT.faithTee, 0, 0.50, 0, spineG);
+  faithCollar.rotation.x = Math.PI / 2; faithCollar.scale.set(1.22, 1, 0.76);
+  const faithDecal = mesh(
+    new THREE.CylinderGeometry(0.16, 0.16, 0.20, 24, 1, true, -0.85, 1.7),
+    new THREE.MeshStandardMaterial({ map: faithTexture(), transparent: true, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1 }),
+    0, 0.20, 0, spineG);
+  faithDecal.scale.set(1.28, 1, 0.85);
+  const jacketPts = [
+    [0.20, -0.10], [0.195, -0.02], [0.20, 0.02], [0.195, 0.12], [0.19, 0.22],
+    [0.205, 0.32], [0.215, 0.40], [0.20, 0.46], [0.11, 0.50], [0.001, 0.50],
+  ].map(p => new THREE.Vector2(p[0], p[1]));
+  const jacketTorso = regMass(mesh(new THREE.LatheGeometry(jacketPts, 36), MAT.saint, 0, 0, 0, spineG));
+  jacketTorso.scale.set(1.22, 1, 0.76); jacketTorso.userData.baseScale.copy(jacketTorso.scale);
+  const jacketCollar = mesh(new THREE.TorusGeometry(0.105, 0.02, 10, 28), MAT.gold, 0, 0.50, 0, spineG);
+  jacketCollar.rotation.x = Math.PI / 2; jacketCollar.scale.set(1.22, 1, 0.76);
+  const jacketHem = mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.045, 28), MAT.gold, 0, -0.075, 0, spineG);
+  jacketHem.scale.set(1.22, 1, 0.76);
+  function sleeve(parent, mat, long) {
+    const g = new THREE.Group(); parent.add(g);
+    if (long) {
+      regMass(mesh(new THREE.CylinderGeometry(0.078, 0.064, 0.52, 18), mat, 0, -0.28, 0, g));
+      const cuff = mesh(new THREE.TorusGeometry(0.066, 0.012, 8, 20), MAT.gold, 0, -0.54, 0, g);
+      cuff.rotation.x = Math.PI / 2;
+      return g;
+    }
+    regMass(mesh(new THREE.CylinderGeometry(0.082, 0.078, 0.20, 18), mat, 0, -0.11, 0, g));
+    return g;
+  }
+  function shoulderCap(parent, mat, r) {
+    return mesh(new THREE.SphereGeometry(r, 20, 14), mat, 0, 0, 0, parent);
+  }
+  const baseSleeveL = sleeve(shoulderL, MAT.baseTee, false);
+  const baseSleeveR = sleeve(shoulderR, MAT.baseTee, false);
+  const faithSleeveL = sleeve(shoulderL, MAT.faithTee, false);
+  const faithSleeveR = sleeve(shoulderR, MAT.faithTee, false);
+  const saintSleeveL = sleeve(shoulderL, MAT.saint, true);
+  const saintSleeveR = sleeve(shoulderR, MAT.saint, true);
+  const baseCapL = shoulderCap(shoulderL, MAT.baseTee, 0.080);
+  const baseCapR = shoulderCap(shoulderR, MAT.baseTee, 0.080);
+  const faithCapL = shoulderCap(shoulderL, MAT.faithTee, 0.080);
+  const faithCapR = shoulderCap(shoulderR, MAT.faithTee, 0.080);
+  const saintCapL = shoulderCap(shoulderL, MAT.saint, 0.076);
+  const saintCapR = shoulderCap(shoulderR, MAT.saint, 0.076);
+  function waistband(mat) {
+    const w = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.06, 28), mat, 0, 0.09, 0, hipsG);
+    w.scale.set(1.28, 1, 0.88);
+    return w;
+  }
+  function hipShell(mat) {
+    const s = mesh(new THREE.CylinderGeometry(0.165, 0.165, 0.22, 28), mat, 0, -0.01, 0, hipsG);
+    s.scale.set(1.28, 1, 0.88);
+    return s;
+  }
+  const shortsWaist = waistband(camoMat);
+  const cargosWaist = waistband(MAT.blackPants);
+  const joggersWaist = waistband(MAT.charcoal);
+  const shortsHip = hipShell(camoMat);
+  const cargosHip = hipShell(MAT.blackPants);
+  const joggersHip = hipShell(MAT.charcoal);
+  function legShells(legG, kneeG, mat, shorts) {
+    const parts = [];
+    if (shorts) {
+      parts.push(regMass(mesh(new THREE.CylinderGeometry(0.12, 0.105, 0.40, 20), mat, 0, -0.12, 0, legG)));
+    } else {
+      parts.push(regMass(mesh(new THREE.CylinderGeometry(0.118, 0.108, 0.52, 20), mat, 0, -0.20, 0, legG)));
+      parts.push(regMass(mesh(new THREE.CylinderGeometry(0.082, 0.07, 0.38, 18), mat, 0, -0.19, 0, kneeG)));
+    }
+    return parts;
+  }
+  const shortsL = legShells(legL, kneeL, camoMat, true);
+  const shortsR = legShells(legR, kneeR, camoMat, true);
+  const cargosL = legShells(legL, kneeL, MAT.blackPants, false);
+  const cargosR = legShells(legR, kneeR, MAT.blackPants, false);
+  const joggersL = legShells(legL, kneeL, MAT.charcoal, false);
+  const joggersR = legShells(legR, kneeR, MAT.charcoal, false);
+  function cargoPocket(legG, kneeG, side) {
+    const p1 = mesh(new THREE.BoxGeometry(0.10, 0.13, 0.025), MAT.blackPants, side * 0.115, -0.20, 0.03, legG);
+    const p2 = mesh(new THREE.BoxGeometry(0.08, 0.10, 0.022), MAT.blackPants, side * 0.075, -0.15, 0.03, kneeG);
+    return [p1, p2];
+  }
+  const cargoPockets = [...cargoPocket(legL, kneeL, 1), ...cargoPocket(legR, kneeR, -1)];
+  function joggerCuff(kneeG) {
+    return mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.06, 16), MAT.charcoal, 0, -0.36, 0, kneeG);
+  }
+  const joggerCuffs = [joggerCuff(kneeL), joggerCuff(kneeR)];
+  const drawstrings = [];
+  for (const s of [1, -1]) {
+    drawstrings.push(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.08, 6),
+      new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9 }), s * 0.03, 0.045, 0.135, hipsG));
+  }
+  const pouchG = new THREE.Group(); pouchG.position.set(0.21, 0.07, 0.06); hipsG.add(pouchG);
+  mesh(new THREE.BoxGeometry(0.16, 0.13, 0.07), MAT.pouch, 0, 0, 0, pouchG);
+  mesh(new THREE.BoxGeometry(0.16, 0.05, 0.075), MAT.pouchDark, 0, 0.045, 0.002, pouchG);
+  for (const s of [1, -1]) {
+    mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.01, 10), MAT.gold, s * 0.04, 0.03, 0.04, pouchG).rotation.x = Math.PI / 2;
+  }
+  pouchG.visible = false;
+  const shakerG = new THREE.Group(); wristL.add(shakerG);
+  const fist = mesh(new THREE.SphereGeometry(0.06, 18, 14), MAT.skin, 0, -0.06, 0.02, shakerG);
+  fist.scale.set(0.9, 1.1, 0.9);
+  const bottleG = new THREE.Group(); bottleG.position.set(0.03, -0.10, 0.09); bottleG.rotation.set(-0.35, 0, 0.12); shakerG.add(bottleG);
+  mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.20, 20), MAT.steel, 0, 0, 0, bottleG);
+  mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.05, 20), MAT.lidBlack, 0, 0.125, 0, bottleG);
+  shakerG.visible = false;
+  const ground = mesh(new THREE.CircleGeometry(1.6, 40), MAT.ground, 0, 0, 0, root);
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x3a3a40, 0.95); scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xffffff, 1.6); dir.position.set(1.5, 3, 2.5); dir.castShadow = true; scene.add(dir);
+  const rim = new THREE.DirectionalLight(0x8899ff, 0.5); rim.position.set(-2, 2, -2); scene.add(rim);
+  const tops = {
+    base: [teeTorso, teeCollar, baseSleeveL, baseSleeveR, baseCapL, baseCapR],
+    faith: [faithTorso, faithCollar, faithDecal, faithSleeveL, faithSleeveR, faithCapL, faithCapR],
+    saint: [jacketTorso, jacketCollar, jacketHem, saintSleeveL, saintSleeveR, saintCapL, saintCapR],
+  };
+  const bottoms = {
+    shorts: [...shortsL, ...shortsR, shortsWaist, shortsHip],
+    cargos: [...cargosL, ...cargosR, cargosWaist, cargosHip, ...cargoPockets],
+    joggers: [...joggersL, ...joggersR, joggersWaist, joggersHip, ...joggerCuffs, ...drawstrings],
+  };
+  const state = { top: 'base', bottom: 'shorts', pouch: false, shaker: false, stache: false, mass: 1, night: false };
+  function applyState() {
+    for (const k in tops) tops[k].forEach(m => m.visible = (k === state.top));
+    for (const k in bottoms) bottoms[k].forEach(m => m.visible = (k === state.bottom));
+    pouchG.visible = state.pouch;
+    shakerG.visible = state.shaker;
+    armL.hand.visible = !state.shaker;
+    stache.visible = state.stache;
+    for (const m of massMeshes) {
+      const b = m.userData.baseScale;
+      m.scale.set(b.x * state.mass, b.y, b.z * state.mass);
+    }
+    if (state.night) {
+      scene.background.set(0x0a1220);
+      hemi.color.set(0x5a6f9f); hemi.groundColor.set(0x11141c); hemi.intensity = 0.7;
+      dir.color.set(0x6a7fb5); dir.intensity = 0.9;
+      rim.intensity = 0.9;
+    } else {
+      scene.background.set(0x141416);
+      hemi.color.set(0xffffff); hemi.groundColor.set(0x3a3a40); hemi.intensity = 0.95;
+      dir.color.set(0xffffff); dir.intensity = 1.6;
+      rim.intensity = 0.5;
+    }
+  }
+  function updateIdle(t) {
+    chestG.scale.y = 1 + 0.008 * Math.sin(t * 1.6);
+    shoulderL.rotation.z = 0.12 + 0.01 * Math.sin(t * 1.6);
+    shoulderR.rotation.z = -0.12 - 0.01 * Math.sin(t * 1.6);
+    headG.rotation.y = 0.02 * Math.sin(t * 0.5);
+  }
+  applyState();
+  let triCount = 0;
+  scene.traverse(o => { if (o.isMesh) { const g = o.geometry; triCount += (g.index ? g.index.count : g.attributes.position.count) / 3; } });
+  return {
+    scene, root, state, applyState, updateIdle, triCount,
+    joints: { hipsG, spineG, chestG, headG, shoulderL, shoulderR, elbowL, elbowR, wristL, wristR, legL, legR, kneeL, kneeR, ankleL, ankleR },
+    garmentGroups: { tops, bottoms, pouchG, shakerG },
+    lights: { hemi, dir, rim },
+    setTop(v) { state.top = v; applyState(); },
+    setBottom(v) { state.bottom = v; applyState(); },
+    setPouch(v) { state.pouch = v; applyState(); },
+    setShaker(v) { state.shaker = v; applyState(); },
+    setMoustache(v) { state.stache = v; applyState(); },
+    setMass(m) { state.mass = m; applyState(); },
+    setNight(v) { state.night = v; applyState(); },
+  };
+}
+// __SCENE_END__
+// __BROWSER_ONLY_START__
+const fig = buildFigure();
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+let azim = 0, polar = 0.06;
+function frame() {
+  camera.aspect = canvas.clientWidth / canvas.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+  const r = 3.4, y = 1.05;
+  camera.position.set(Math.sin(azim) * r, y + Math.sin(polar) * r * 0.4, Math.cos(azim) * r);
+  camera.lookAt(0, 0.95, 0);
+}
+let dragging = false, px = 0, py = 0;
+canvas.addEventListener('pointerdown', e => { dragging = true; px = e.clientX; py = e.clientY; });
+addEventListener('pointerup', () => dragging = false);
+addEventListener('pointermove', e => {
+  if (!dragging) return;
+  azim -= (e.clientX - px) * 0.005;
+  polar = Math.max(-0.25, Math.min(0.5, polar + (e.clientY - py) * 0.003));
+  px = e.clientX; py = e.clientY;
+});
+const $ = id => document.getElementById(id);
+function syncUI() {
+  $('topSel').value = fig.state.top;
+  $('botSel').value = fig.state.bottom;
+  $('pouchChk').checked = fig.state.pouch;
+  $('shakerChk').checked = fig.state.shaker;
+  $('stacheChk').checked = fig.state.stache;
+  $('nightChk').checked = fig.state.night;
+  $('massSlider').value = Math.round(fig.state.mass * 100);
+  $('massVal').textContent = Math.round(fig.state.mass * 100) + '%';
+}
+$('topSel').addEventListener('change', e => fig.setTop(e.target.value));
+$('botSel').addEventListener('change', e => fig.setBottom(e.target.value));
+$('pouchChk').addEventListener('change', e => fig.setPouch(e.target.checked));
+$('shakerChk').addEventListener('change', e => fig.setShaker(e.target.checked));
+$('stacheChk').addEventListener('change', e => fig.setMoustache(e.target.checked));
+$('nightChk').addEventListener('change', e => fig.setNight(e.target.checked));
+$('massSlider').addEventListener('input', e => { fig.setMass(e.target.value / 100); $('massVal').textContent = e.target.value + '%'; });
+(function () {
+  const q = new URLSearchParams(location.search);
+  if (q.get('top')) fig.setTop(q.get('top'));
+  if (q.get('bottom')) fig.setBottom(q.get('bottom'));
+  if (q.get('pouch')) fig.setPouch(q.get('pouch') === '1');
+  if (q.get('shaker')) fig.setShaker(q.get('shaker') === '1');
+  if (q.get('stache')) fig.setMoustache(q.get('stache') === '1');
+  if (q.get('night')) fig.setNight(q.get('night') === '1');
+  if (q.get('mass')) fig.setMass(parseFloat(q.get('mass')) / 100);
+  syncUI();
+})();
+document.getElementById('stats').textContent = Math.round(fig.triCount).toLocaleString() + ' triangles · drag to orbit';
+function tick(t) {
+  requestAnimationFrame(tick);
+  fig.updateIdle(t / 1000);
+  frame();
+  renderer.render(fig.scene, camera);
+}
+requestAnimationFrame(tick);
+// __BROWSER_ONLY_END__
+</script>
+</body>
+</html>
